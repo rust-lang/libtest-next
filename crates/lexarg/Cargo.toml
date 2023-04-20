@@ -1,28 +1,9 @@
-[workspace]
-resolver = "2"
-members = ["crates/*"]
-
-[workspace.package]
-license = "MIT OR Apache-2.0"
-edition = "2021"
-rust-version = "1.65.0"  # MSRV
-include = [
-  "build.rs",
-  "src/**/*",
-  "Cargo.toml",
-  "Cargo.lock",
-  "LICENSE*",
-  "README.md",
-  "benches/**/*",
-  "examples/**/*"
-]
-
 [package]
-name = "pytest-rs"
-version = "0.0.1"
-description = "Experiment with pytest-like harness for Rust"
-categories = []
-keywords = []
+name = "lexarg"
+version = "0.1.0"
+description = "Minimal, API stable CLI parser"
+keywords = ["args", "arguments", "cli", "parser", "getopt"]
+categories = ["command-line-interface"]
 license.workspace = true
 edition.workspace = true
 rust-version.workspace = true

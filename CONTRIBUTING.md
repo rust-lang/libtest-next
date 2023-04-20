@@ -1,4 +1,4 @@
-# Contributing to PROJECT
+# Contributing to pytest-rs
 
 Thanks for wanting to contribute! There are many ways to contribute and we
 appreciate any level you're willing to do.
@@ -55,7 +55,7 @@ As a heads up, we'll be running your PR through the following gauntlet:
 
 Pre-requisites
 - Running `cargo login`
-- A member of `ORG:Maintainers`
+- A member of `epage:Maintainers`
 - Push permission to the repo
 - [`cargo-release`](https://github.com/crate-ci/cargo-release/)
 
@@ -64,6 +64,6 @@ When we're ready to release, a project owner should do the following
 2. Determine what the next version is, according to semver
 3. Run [`cargo release -x <level>`](https://github.com/crate-ci/cargo-release)
 
-[issues]: https://github.com/ORG/PROJECT/issues
-[new issue]: https://github.com/ORG/PROJECT/issues/new
-[all issues]: https://github.com/ORG/PROJECT/issues?utf8=%E2%9C%93&q=is%3Aissue
+[issues]: https://github.com/epage/pytest-rs/issues
+[new issue]: https://github.com/epage/pytest-rs/issues/new
+[all issues]: https://github.com/epage/pytest-rs/issues?utf8=%E2%9C%93&q=is%3Aissue

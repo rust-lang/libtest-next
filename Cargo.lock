@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "PROJECT"
+name = "pytest-rs"
 version = "0.0.1"

@@ -17,9 +17,9 @@ include = [
 ]
 
 [package]
-name = "PROJECT"
+name = "pytest-rs"
 version = "0.0.1"
-description = "DESCRIPTION"
+description = "Experiment with pytest-like harness for Rust"
 categories = []
 keywords = []
 license.workspace = true
@@ -37,7 +37,7 @@ pre-release-replacements = [
   {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
   {file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## [Unreleased] - ReleaseDate\n", exactly=1},
-  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/ORG/PROJECT/compare/{{tag_name}}...HEAD", exactly=1},
+  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/epage/pytest-rs/compare/{{tag_name}}...HEAD", exactly=1},
 ]
 
 [features]

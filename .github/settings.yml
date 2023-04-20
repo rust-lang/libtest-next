@@ -1,8 +1,8 @@
 # These settings are synced to GitHub by https://probot.github.io/apps/settings/
 
 repository:
-  description: "DESCRIPTION"
-  homepage: "https://docs.rs/PROJECT"
+  description: "Experiment with pytest-like harness for Rust"
+  homepage: "https://docs.rs/pytest-rs"
   topics: ""
   has_issues: true
   has_projects: false

@@ -14,5 +14,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "libtest-lexarg"
+version = "0.1.0"
+dependencies = [
+ "lexarg",
+ "lexarg-error",
+]
+
+[[package]]
 name = "pytest-rs"
 version = "0.0.1"

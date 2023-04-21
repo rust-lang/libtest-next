@@ -247,8 +247,6 @@ impl<'a> Parser<'a> {
         self.next_value()
     }
 
-    /// [`Parser::optional_value`], but indicate whether the value was joined
-    /// with an = sign. This matters for [`Parser::values`].
     fn next_attached_value(&mut self) -> Option<&'a OsStr> {
         match self.state? {
             State::PendingValue(attached) => {

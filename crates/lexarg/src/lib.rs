@@ -78,6 +78,7 @@ pub struct Parser<'a> {
     raw: &'a dyn RawArgs,
     current: usize,
     state: Option<State<'a>>,
+    was_attached: bool,
 }
 
 impl<'a> Parser<'a> {
@@ -97,6 +98,7 @@ impl<'a> Parser<'a> {
             raw,
             current: 0,
             state: None,
+            was_attached: false,
         }
     }
 
@@ -117,6 +119,9 @@ impl<'a> Parser<'a> {
     /// Options that are not valid unicode are transformed with replacement
     /// characters as by [`String::from_utf8_lossy`].
     pub fn next(&mut self) -> Option<Arg<'a>> {
+        // Always reset
+        self.was_attached = false;
+
         match self.state {
             Some(State::PendingValue(attached)) => {
                 // Last time we got `--long=value`, and `value` hasn't been used.
@@ -233,18 +238,26 @@ impl<'a> Parser<'a> {
 
     /// Get a flag's value
     ///
-    /// This function should normally be called right after seeing an option
-    /// that expects a value, with positional arguments being collected
-    /// using [`Parser::next()`].
+    /// This function should normally be called right after seeing a flag that expects a value;
+    /// positional arguments should be collected with [`Parser::next()`].
     ///
-    /// A value is collected even if it looks like an option
-    /// (i.e., starts with `-`).
+    /// A value is collected even if it looks like an option (i.e., starts with `-`).
+    ///
+    /// `None` is returned if there is not another applicable flag value, including:
+    /// - No more arguments are present
+    /// - `--` was encountered, meaning all remaining arguments are positional
+    /// - Being called again when the first value was attached (e.g. `--hello=world`)
     pub fn flag_value(&mut self) -> Option<&'a OsStr> {
         if let Some(value) = self.next_attached_value() {
+            self.was_attached = true;
             return Some(value);
         }
 
-        self.next_value()
+        if !self.was_attached {
+            return self.next_value();
+        }
+
+        None
     }
 
     fn next_attached_value(&mut self) -> Option<&'a OsStr> {
@@ -478,6 +491,7 @@ mod tests {
         assert_eq!(p.next().unwrap(), Long("foo"));
         assert_eq!(p.next().unwrap(), Long("bar"));
         assert_eq!(p.flag_value().unwrap(), "qux");
+        assert_eq!(p.flag_value(), None);
         assert_eq!(p.next().unwrap(), Long("foobar"));
         assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("qux=baz")));
         assert_eq!(p.next(), None);
@@ -494,6 +508,7 @@ mod tests {
         // ...even if it's an argument of an option
         let mut p = Parser::new(&["-x", "--", "-y"]);
         assert_eq!(p.next().unwrap(), Short('x'));
+        assert_eq!(p.flag_value(), None);
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-y")));
         assert_eq!(p.next(), None);
 
@@ -627,6 +642,13 @@ mod tests {
         let mut p = Parser::new(&["-a=b"]);
         assert_eq!(p.next().unwrap(), Short('a'));
         assert_eq!(p.flag_value().unwrap(), OsStr::new("b"));
+        assert_eq!(p.next(), None);
+
+        let mut p = Parser::new(&["-a=b", "c"]);
+        assert_eq!(p.next().unwrap(), Short('a'));
+        assert_eq!(p.flag_value().unwrap(), OsStr::new("b"));
+        assert_eq!(p.flag_value(), None);
+        assert_eq!(p.next().unwrap(), Value(OsStr::new("c")));
         assert_eq!(p.next(), None);
 
         let mut p = Parser::new(&["-a=b"]);
@@ -811,7 +833,7 @@ mod tests {
                             matches!(parser.state, None | Some(State::Escaped)),
                             "{next:?} via {path:?}",
                         );
-                        if parser.state == None {
+                        if parser.state == None && !parser.was_attached {
                             assert_eq!(parser.current, parser.raw.len(), "{next:?} via {path:?}",);
                         }
                     }

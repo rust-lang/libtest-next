@@ -7,5 +7,12 @@ name = "lexarg"
 version = "0.1.0"
 
 [[package]]
+name = "lexarg-error"
+version = "0.1.0"
+dependencies = [
+ "lexarg",
+]
+
+[[package]]
 name = "pytest-rs"
 version = "0.0.1"

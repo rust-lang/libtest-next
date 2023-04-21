@@ -22,5 +22,9 @@ dependencies = [
 ]
 
 [[package]]
+name = "libtest2-harness"
+version = "0.1.0"
+
+[[package]]
 name = "pytest-rs"
 version = "0.0.1"

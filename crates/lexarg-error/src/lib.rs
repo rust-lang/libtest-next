@@ -72,10 +72,6 @@
 
 /// `Result<T, Error>`
 ///
-/// This is a reasonable return type to use throughout your application but also
-/// for `fn main`; if you do, failures will be printed along with any
-/// [context][Context] and a backtrace if one was captured.
-///
 /// `lexarg_error::Result` may be used with one *or* two type parameters.
 ///
 /// ```rust

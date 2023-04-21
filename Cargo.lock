@@ -24,6 +24,11 @@ dependencies = [
 [[package]]
 name = "libtest2-harness"
 version = "0.1.0"
+dependencies = [
+ "lexarg",
+ "lexarg-error",
+ "libtest-lexarg",
+]
 
 [[package]]
 name = "pytest-rs"

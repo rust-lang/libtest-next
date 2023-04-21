@@ -256,7 +256,8 @@ Options:
                         generator with SEED
 "#;
 
-pub const AFTER_HELP: &str = r#"The FILTER string is tested against the name of all tests, and only those
+pub const AFTER_HELP: &str = r#"
+The FILTER string is tested against the name of all tests, and only those
 tests whose names contain the filter are run. Multiple filter strings may
 be passed, which will run all tests matching any of the filters.
 
@@ -293,7 +294,7 @@ Test Attributes:
 /// Intermediate CLI parser state for [`TestOpts`]
 ///
 /// See [`TestOptsParseState::parse_next`]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TestOptsParseState {
     opts: TestOpts,
     quiet: bool,
@@ -303,6 +304,10 @@ pub struct TestOptsParseState {
 }
 
 impl TestOptsParseState {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     /// Check if `arg` is relevant to [`TestOpts`]
     pub fn parse_next<'a>(
         &mut self,

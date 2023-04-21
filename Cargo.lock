@@ -3,5 +3,9 @@
 version = 3
 
 [[package]]
+name = "lexarg"
+version = "0.1.0"
+
+[[package]]
 name = "pytest-rs"
 version = "0.0.1"

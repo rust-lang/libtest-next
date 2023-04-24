@@ -26,6 +26,8 @@ pre-release-replacements = [
 default = []
 
 [dependencies]
+anstream = "0.3.1"
+anstyle = "1.0.0"
 lexarg = { version = "0.1.0", path = "../lexarg" }
 lexarg-error = { version = "0.1.0", path = "../lexarg-error" }
 libtest-lexarg = { version = "0.1.0", path = "../libtest-lexarg" }

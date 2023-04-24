@@ -25,6 +25,14 @@ impl Harness {
             }
         };
 
+        match opts.color {
+            libtest_lexarg::ColorConfig::AutoColor => anstream::ColorChoice::Auto,
+            libtest_lexarg::ColorConfig::AlwaysColor => anstream::ColorChoice::Always,
+            libtest_lexarg::ColorConfig::NeverColor => anstream::ColorChoice::Never,
+        }
+        .write_global();
+
+        let total = self.cases.len();
         let matches_filter = |case: &dyn Case, filter: &str| {
             let test_name = case.name();
 
@@ -46,42 +54,19 @@ impl Harness {
             self.cases
                 .retain(|case| !opts.skip.iter().any(|sf| matches_filter(case.as_ref(), sf)));
         }
-
-        if opts.list {
-            for case in self.cases {
-                println!("{}", case.name());
-            }
-        } else {
-            let mut state = State::new();
-            let run_ignored = match opts.run_ignored {
-                libtest_lexarg::RunIgnored::Yes | libtest_lexarg::RunIgnored::Only => true,
-                libtest_lexarg::RunIgnored::No => false,
-            };
-            state.run_ignored(run_ignored);
-
-            for case in self.cases {
-                println!("Testing {}", case.name());
-                match case.run(&state) {
-                    Ok(()) => {
-                        println!("Success");
-                    }
-                    Err(RunError(RunErrorInner::Failed(fail))) => {
-                        println!("Failed: {}", fail);
-                    }
-                    Err(RunError(RunErrorInner::Ignored(ignored))) => {
-                        if let Some(reason) = ignored.reason() {
-                            println!("Ignored: {}", reason);
-                        } else {
-                            println!("Ignored");
-                        }
-                    }
-                }
+        let num_filtered_out = total - self.cases.len();
+        match run(&opts, &self.cases, num_filtered_out) {
+            Ok(true) => std::process::exit(0),
+            Ok(false) => std::process::exit(ERROR_EXIT_CODE),
+            Err(e) => {
+                eprintln!("error: io error when listing tests: {e:?}");
+                std::process::exit(ERROR_EXIT_CODE)
             }
         }
-
-        std::process::exit(0)
     }
 }
+
+const ERROR_EXIT_CODE: i32 = 101;
 
 fn parse(parser: &mut cli::Parser) -> cli::Result<libtest_lexarg::TestOpts> {
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
@@ -129,4 +114,36 @@ fn parse(parser: &mut cli::Parser) -> cli::Result<libtest_lexarg::TestOpts> {
     }
 
     test_opts.finish()
+}
+
+fn run(
+    opts: &libtest_lexarg::TestOpts,
+    cases: &[Box<dyn Case>],
+    num_filtered_out: usize,
+) -> std::io::Result<bool> {
+    let mut outcomes = Outcomes::new(&opts, cases, num_filtered_out)?;
+
+    if opts.list {
+        outcomes.list(cases)?;
+        Ok(true)
+    } else {
+        outcomes.start_suite()?;
+
+        let mut state = State::new();
+        let run_ignored = match opts.run_ignored {
+            libtest_lexarg::RunIgnored::Yes | libtest_lexarg::RunIgnored::Only => true,
+            libtest_lexarg::RunIgnored::No => false,
+        };
+        state.run_ignored(run_ignored);
+
+        for case in cases {
+            outcomes.start_case(case.as_ref())?;
+            let outcome = case.run(&state);
+            outcomes.finish_case(case.as_ref(), outcome)?;
+        }
+
+        outcomes.finish_suite()?;
+
+        Ok(!outcomes.has_failed())
+    }
 }

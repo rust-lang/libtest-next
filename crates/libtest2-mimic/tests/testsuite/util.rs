@@ -52,9 +52,9 @@ pub fn compile_test(package_root: &std::path::PathBuf) -> std::path::PathBuf {
 
 fn mimic_relpath(root: &std::path::Path) -> std::path::PathBuf {
     let current_dir = std::env::current_dir().unwrap();
-    pathdiff::diff_paths(&current_dir, &root)
-        .unwrap()
-        .to_owned()
+    let relpath = pathdiff::diff_paths(&current_dir, &root).unwrap();
+    let normalized = relpath.as_os_str().to_str().unwrap().replace('\\', "/");
+    std::path::PathBuf::from(normalized)
 }
 
 fn target_dir() -> std::path::PathBuf {
@@ -66,7 +66,7 @@ fn tempdir() -> std::path::PathBuf {
 
     let tempdir = std::path::Path::new(TEMPDIR);
     std::fs::create_dir_all(tempdir).unwrap();
-    tempdir.canonicalize().unwrap()
+    dunce::canonicalize(&tempdir).unwrap()
 }
 
 mod tests {

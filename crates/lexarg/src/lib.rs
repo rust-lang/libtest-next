@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
                 if arg == "--" {
                     self.state = Some(State::Escaped);
                     self.current += 1;
-                    return self.next();
+                    Some(Arg::Escape)
                 } else if arg == "-" {
                     self.state = None;
                     self.current += 1;
@@ -427,6 +427,8 @@ pub enum Arg<'a> {
     Long(&'a str),
     /// A positional argument, e.g. `/dev/null`.
     Value(&'a OsStr),
+    /// Marks the following values have been escaped with `--`
+    Escape,
     /// User passed something in that doesn't work
     Unexpected(&'a OsStr),
 }
@@ -464,6 +466,7 @@ mod tests {
         assert_eq!(p.flag_value().unwrap(), "10");
         assert_eq!(p.next().unwrap(), Value(OsStr::new("foo")));
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
+        assert_eq!(p.next().unwrap(), Escape);
         assert_eq!(p.next().unwrap(), Value(OsStr::new("baz")));
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-qux")));
         assert_eq!(p.next(), None);
@@ -502,6 +505,7 @@ mod tests {
         // "--" should indicate the end of the options
         let mut p = Parser::new(&["-x", "--", "-y"]);
         assert_eq!(p.next().unwrap(), Short('x'));
+        assert_eq!(p.next().unwrap(), Escape);
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-y")));
         assert_eq!(p.next(), None);
 
@@ -551,6 +555,7 @@ mod tests {
         assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("--=3")));
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
         assert_eq!(p.next().unwrap(), Short('x'));
+        assert_eq!(p.next().unwrap(), Escape);
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
         assert_eq!(p.next().unwrap(), Value(OsStr::new("-x")));
         assert_eq!(p.next().unwrap(), Value(OsStr::new("--")));

@@ -25,6 +25,22 @@ repository:
   merge_commit_message: "PR_BODY"
 
 labels:
+  # Area
+  - name: "A-lexarg"
+    description: "Area: lexarg CLI parser"
+    color: '#f7e101'
+  - name: "A-harness"
+    description: "Area: core test harness"
+    color: '#f7e101'
+  - name: "A-libtest2"
+    description: "Area: libtest implemented on top of the new harness"
+    color: '#f7e101'
+  - name: "A-pytest"
+    description: "Area: pytest-like framework implemented on top of the new harness"
+    color: '#f7e101'
+  - name: "A-mimic"
+    description: "Area: libtest-mimic implemented on top of the new harness"
+    color: '#f7e101'
   # Type
   - name: bug
     color: '#b60205'

@@ -1,12 +1,19 @@
 use crate::*;
 
 pub struct Harness {
+    raw: Vec<std::ffi::OsString>,
     cases: Vec<Box<dyn Case>>,
 }
 
 impl Harness {
-    pub fn new() -> Self {
-        Self { cases: vec![] }
+    pub fn with_args(args: impl IntoIterator<Item = impl Into<std::ffi::OsString>>) -> Self {
+        let raw = args.into_iter().map(|s| s.into()).collect::<Vec<_>>();
+        Self { raw, cases: vec![] }
+    }
+
+    pub fn with_env() -> Self {
+        let raw = std::env::args_os().collect::<Vec<_>>();
+        Self { raw, cases: vec![] }
     }
 
     pub fn case(mut self, case: impl Case + 'static) -> Self {
@@ -14,9 +21,15 @@ impl Harness {
         self
     }
 
-    pub fn main(mut self) -> std::convert::Infallible {
-        let raw = std::env::args_os().collect::<Vec<_>>();
-        let mut parser = cli::Parser::new(&raw);
+    pub fn cases(mut self, cases: impl IntoIterator<Item = impl Case + 'static>) -> Self {
+        for case in cases {
+            self.cases.push(Box::new(case));
+        }
+        self
+    }
+
+    pub fn main(mut self) -> ! {
+        let mut parser = cli::Parser::new(&self.raw);
         let opts = match parse(&mut parser) {
             Ok(opts) => opts,
             Err(err) => {

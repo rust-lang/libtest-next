@@ -13,53 +13,6 @@ pub trait Case {
     fn run(&self, state: &State) -> Result<(), RunError>;
 }
 
-pub struct SimpleCase {
-    name: String,
-    runner: Box<dyn Fn(&State) -> Result<(), RunError> + Send + Sync>,
-    kind: TestKind,
-    source: Option<Source>,
-}
-
-impl SimpleCase {
-    pub fn test(
-        name: impl Into<String>,
-        runner: impl Fn(&State) -> Result<(), RunError> + Send + Sync + 'static,
-    ) -> Self {
-        Self {
-            name: name.into(),
-            runner: Box::new(runner),
-            kind: Default::default(),
-            source: None,
-        }
-    }
-
-    pub fn kind(mut self, kind: TestKind) -> Self {
-        self.kind = kind;
-        self
-    }
-
-    pub fn source(mut self, source: Source) -> Self {
-        self.source = Some(source);
-        self
-    }
-}
-
-impl Case for SimpleCase {
-    fn name(&self) -> &str {
-        &self.name
-    }
-    fn kind(&self) -> TestKind {
-        self.kind
-    }
-    fn source(&self) -> Option<&Source> {
-        self.source.as_ref()
-    }
-
-    fn run(&self, state: &State) -> Result<(), RunError> {
-        (self.runner)(state)
-    }
-}
-
 /// Type of the test according to the [rust book](https://doc.rust-lang.org/cargo/guide/tests.html)
 /// conventions.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

@@ -15,7 +15,7 @@
 //! And in `tests/mytest.rs` you would call [`run`] in the `main` function:
 //!
 //! ```no_run
-//! libtest2_harness::Harness::new()
+//! libtest2_harness::Harness::with_env()
 //!     .main();
 //! ```
 //!

@@ -12,7 +12,7 @@
 //! harness = false
 //! ```
 //!
-//! And in `tests/mytest.rs` you would call [`run`] in the `main` function:
+//! And in `tests/mytest.rs` you would call [`Harness::main`] in the `main` function:
 //!
 //! ```no_run
 //! libtest2_harness::Harness::with_env()

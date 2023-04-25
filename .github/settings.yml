@@ -25,7 +25,6 @@ repository:
   merge_commit_message: "PR_BODY"
 
 labels:
-  # Area
   - name: "A-lexarg"
     description: "Area: lexarg CLI parser"
     color: '#f7e101'
@@ -41,22 +40,21 @@ labels:
   - name: "A-mimic"
     description: "Area: libtest-mimic implemented on top of the new harness"
     color: '#f7e101'
-  # Type
-  - name: bug
-    color: '#b60205'
-    description: "Not as expected"
-  - name: enhancement
-    color: '#1d76db'
-    description: "Improve the expected"
-  # Flavor
-  - name: question
-    color: "#cc317c"
-    description: "Uncertainty is involved"
-  - name: breaking-change
-    color: "#e99695"
-  - name: good first issue
-    color: '#c2e0c6'
-    description: "Help wanted!"
+  - name: "C-bug"
+    description: "Category: Things not working as expected"
+    color: '#f5f1fd'
+  - name: "C-enhancement"
+    description: "Category: Raise on the bar on expectations"
+    color: '#f5f1fd'
+  - name: "C-question"
+    description: Uncertainty is involved
+    color: '#f5f1fd'
+  - name: "M-breaking-change"
+    description: "Meta: Implementing or merging this will introduce a breaking change."
+    color: '#E10C02'
+  - name: "E-help-wanted"
+    description: "Call for participation: Help is requested to fix this issue."
+    color: '#02E10C'
 
 branches:
   - name: main

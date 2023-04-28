@@ -553,6 +553,17 @@ impl TestOptsParseState {
             (false, false) => RunIgnored::No,
         };
 
+        if self.opts.test_threads.is_none() {
+            if let Ok(value) = std::env::var("RUST_TEST_THREADS") {
+                self.opts.test_threads =
+                    Some(value.parse::<std::num::NonZeroUsize>().map_err(|_e| {
+                        Error::msg(format!(
+                            "RUST_TEST_THREADS is `{value}`, should be a positive integer."
+                        ))
+                    })?);
+            }
+        }
+
         let opts = self.opts;
         Ok(opts)
     }

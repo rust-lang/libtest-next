@@ -29,7 +29,7 @@ pub struct TestOpts {
     pub format: OutputFormat,
     pub shuffle: bool,
     pub shuffle_seed: Option<u64>,
-    pub test_threads: Option<usize>,
+    pub test_threads: Option<std::num::NonZeroUsize>,
     pub skip: Vec<String>,
     pub time_options: Option<TestTimeOptions>,
     /// Stop at first failing test.
@@ -349,13 +349,10 @@ impl TestOptsParseState {
                     .ok_or_else(|| Error::msg("`--test-threads` requires a positive integer"))?
                     .to_str()
                     .ok_or_else(|| Error::msg("unsupported value"))?;
-                self.opts.test_threads = match test_threads.parse::<usize>() {
-                    Ok(0) => {
-                        return Err(Error::msg("`--test-threads=0` must be a positive integer"))
-                    }
+                self.opts.test_threads = match test_threads.parse::<std::num::NonZeroUsize>() {
                     Ok(n) => Some(n),
                     Err(_) => {
-                        return Err(Error::msg("`--test-threads=0` must be a positive integer"));
+                        return Err(Error::msg("`--test-threads` must be a positive integer"));
                     }
                 };
             }

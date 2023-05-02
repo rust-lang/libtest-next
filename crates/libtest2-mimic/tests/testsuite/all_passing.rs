@@ -42,9 +42,9 @@ fn normal() {
         &[],
         r#"
 running 3 tests
-test foo   ... ok
 test bar   ... ok
 test barro ... ok
+test foo   ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 filtered out; finished in [..]s
 
@@ -150,9 +150,9 @@ fn skip_nothing() {
         &["--skip", "peter"],
         r#"
 running 3 tests
-test foo   ... ok
 test bar   ... ok
 test barro ... ok
+test foo   ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 filtered out; finished in [..]s
 
@@ -194,8 +194,8 @@ fn skip_exact() {
         &["--exact", "--skip", "bar"],
         r#"
 running 2 tests
-test foo   ... ok
 test barro ... ok
+test foo   ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 1 filtered out; finished in [..]s
 

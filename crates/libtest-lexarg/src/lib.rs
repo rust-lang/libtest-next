@@ -509,7 +509,7 @@ impl TestOptsParseState {
         if self.opts.shuffle_seed.is_some() && !allow_unstable_options {
             return Err(Error::msg("`--shuffle-seed` requires `-Zunstable-options`"));
         }
-        if !self.opts.shuffle_seed.is_none() && allow_unstable_options {
+        if self.opts.shuffle_seed.is_none() && allow_unstable_options {
             self.opts.shuffle_seed = match std::env::var("RUST_TEST_SHUFFLE_SEED") {
                 Ok(val) => match val.parse::<u64>() {
                     Ok(n) => Some(n),

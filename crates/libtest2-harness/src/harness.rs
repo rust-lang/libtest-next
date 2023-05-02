@@ -68,6 +68,14 @@ impl Harness {
                 .retain(|case| !opts.skip.iter().any(|sf| matches_filter(case.as_ref(), sf)));
         }
         let num_filtered_out = total - self.cases.len();
+
+        self.cases
+            .sort_unstable_by_key(|case| case.name().to_owned());
+        let seed = crate::shuffle::get_shuffle_seed(&opts);
+        if let Some(seed) = seed {
+            crate::shuffle::shuffle_tests(seed, &mut self.cases);
+        }
+
         match run(&opts, &self.cases, num_filtered_out) {
             Ok(true) => std::process::exit(0),
             Ok(false) => std::process::exit(ERROR_EXIT_CODE),

@@ -23,6 +23,7 @@
 mod case;
 mod harness;
 mod outcomes;
+mod shuffle;
 mod state;
 
 pub mod cli;

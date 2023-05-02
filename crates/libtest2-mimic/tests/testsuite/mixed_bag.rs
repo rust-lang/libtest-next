@@ -657,3 +657,63 @@ test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in 
 "#,
     )
 }
+
+#[test]
+fn shuffle() {
+    check(
+        &["-Zunstable-options", "--list", "--shuffle-seed=1"],
+        0,
+        r#"fox: test
+cat: test
+fly: test
+bear: test
+owl: test
+frog: test
+bunny: test
+dog: test
+
+8 tests
+
+"#,
+        r#"fox: test
+cat: test
+fly: test
+bear: test
+owl: test
+frog: test
+bunny: test
+dog: test
+
+8 tests
+
+"#,
+    );
+    check(
+        &["-Zunstable-options", "--list", "--shuffle-seed=2"],
+        0,
+        r#"owl: test
+dog: test
+fox: test
+frog: test
+bear: test
+fly: test
+bunny: test
+cat: test
+
+8 tests
+
+"#,
+        r#"owl: test
+dog: test
+fox: test
+frog: test
+bear: test
+fly: test
+bunny: test
+cat: test
+
+8 tests
+
+"#,
+    );
+}

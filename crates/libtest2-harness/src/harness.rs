@@ -145,6 +145,28 @@ fn run(
 ) -> std::io::Result<bool> {
     let mut outcomes = Outcomes::new(&opts, cases, num_filtered_out)?;
 
+    if opts.force_run_in_process {
+        todo!("`--force-run-in-process` is not yet supported");
+    }
+    if opts.exclude_should_panic {
+        todo!("`--exclude-should-panic` is not yet supported");
+    }
+    if opts.nocapture {
+        todo!("`--nocapture` is not yet supported");
+    }
+    if opts.time_options.is_some() {
+        todo!("`--report-time` / `--ensure-time` are not yet supported");
+    }
+    if opts.fail_fast {
+        todo!("fail-fast is not yet supported");
+    }
+    if opts.options.display_output {
+        todo!("`--show-output` is not yet supported");
+    }
+    if opts.options.panic_abort {
+        todo!("panic-abort is not yet supported");
+    }
+
     if opts.list {
         outcomes.list(cases)?;
         Ok(true)

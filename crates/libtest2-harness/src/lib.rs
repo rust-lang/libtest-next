@@ -22,7 +22,7 @@
 
 mod case;
 mod harness;
-mod outcomes;
+mod notify;
 mod shuffle;
 mod state;
 
@@ -30,5 +30,4 @@ pub mod cli;
 
 pub use case::*;
 pub use harness::*;
-pub(crate) use outcomes::*;
 pub use state::*;

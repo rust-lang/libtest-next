@@ -22,7 +22,7 @@ fn check_katara(_state: &State) -> RunResult {
     Ok(())
 }
 fn check_sokka(_state: &State) -> RunResult {
-    Err(RunError::msg("Sokka tripped and fell :("))
+    Err(RunError::fail("Sokka tripped and fell :("))
 }
 fn long_computation(state: &State) -> RunResult {
     state.ignore_for("slow")?;

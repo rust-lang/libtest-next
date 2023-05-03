@@ -9,11 +9,11 @@ fn main() {
     libtest2_mimic::Harness::with_env()
         .cases(vec![
             Trial::test("cat", |_| Ok(())),
-            Trial::test("dog", |_| Err(RunError::msg("was not a good boy"))),
+            Trial::test("dog", |_| Err(RunError::fail("was not a good boy"))),
             Trial::test("fox", |_| Ok(())),
             Trial::test("bunny", |state| {
                 state.ignore_for("fails")?;
-                Err(RunError::msg("jumped too high"))
+                Err(RunError::fail("jumped too high"))
             }),
             Trial::test("frog", |state| {
                 state.ignore_for("slow")?;
@@ -21,7 +21,7 @@ fn main() {
             }),
             Trial::test("owl", |state| {
                 state.ignore_for("fails")?;
-                Err(RunError::msg("broke neck"))
+                Err(RunError::fail("broke neck"))
             }),
             Trial::test("fly", |state| {
                 state.ignore_for("fails")?;
@@ -29,7 +29,7 @@ fn main() {
             }),
             Trial::test("bear", |state| {
                 state.ignore_for("fails")?;
-                Err(RunError::msg("no honey"))
+                Err(RunError::fail("no honey"))
             }),
         ])
         .main();
@@ -136,7 +136,7 @@ was not a good boy
 failures:
     dog
 
-test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
         r#"
@@ -152,7 +152,7 @@ was not a good boy
 failures:
     dog
 
-test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
     )
@@ -183,7 +183,7 @@ was not a good boy
 failures:
     dog
 
-test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
         r#"
@@ -199,7 +199,7 @@ was not a good boy
 failures:
     dog
 
-test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
     )
@@ -474,7 +474,7 @@ failures:
     dog
     owl
 
-test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in [..]s
 
 "#,
         r#"
@@ -502,7 +502,7 @@ failures:
     dog
     owl
 
-test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in [..]s
 
 "#,
     )
@@ -545,7 +545,7 @@ failures:
     dog
     owl
 
-test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in [..]s
 
 "#,
         r#"
@@ -573,7 +573,7 @@ failures:
     dog
     owl
 
-test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in 0.00s
+test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in [..]s
 
 "#,
     )
@@ -616,6 +616,78 @@ failures:
 
 test result: FAILED. 1 passed; 1 failed; 0 ignored; 6 filtered out; finished in [..]s
 
+"#,
+    )
+}
+
+#[test]
+fn list_json() {
+    check(
+        &["-Zunstable-options", "--format=json", "--list", "a"],
+        0,
+        r#"{"event":"discover-start"}
+{"event":"discover-case","name":"bear","mode":"test","run":true}
+{"event":"discover-case","name":"bunny","mode":"test","run":false}
+{"event":"discover-case","name":"cat","mode":"test","run":true}
+{"event":"discover-case","name":"dog","mode":"test","run":false}
+{"event":"discover-case","name":"fly","mode":"test","run":false}
+{"event":"discover-case","name":"fox","mode":"test","run":false}
+{"event":"discover-case","name":"frog","mode":"test","run":false}
+{"event":"discover-case","name":"owl","mode":"test","run":false}
+{"event":"discover-complete","elapsed_s":"[..]","seed":null}
+"#,
+        r#"{"event":"discover-start"}
+{"event":"discover-case","name":"bear","mode":"test","run":true}
+{"event":"discover-case","name":"bunny","mode":"test","run":false}
+{"event":"discover-case","name":"cat","mode":"test","run":true}
+{"event":"discover-case","name":"dog","mode":"test","run":false}
+{"event":"discover-case","name":"fly","mode":"test","run":false}
+{"event":"discover-case","name":"fox","mode":"test","run":false}
+{"event":"discover-case","name":"frog","mode":"test","run":false}
+{"event":"discover-case","name":"owl","mode":"test","run":false}
+{"event":"discover-complete","elapsed_s":"[..]","seed":null}
+"#,
+    )
+}
+
+#[test]
+fn test_json() {
+    check(
+        &["-Zunstable-options", "--format=json", "a"],
+        0,
+        r#"{"event":"discover-start"}
+{"event":"discover-case","name":"bear","mode":"test","run":true}
+{"event":"discover-case","name":"bunny","mode":"test","run":false}
+{"event":"discover-case","name":"cat","mode":"test","run":true}
+{"event":"discover-case","name":"dog","mode":"test","run":false}
+{"event":"discover-case","name":"fly","mode":"test","run":false}
+{"event":"discover-case","name":"fox","mode":"test","run":false}
+{"event":"discover-case","name":"frog","mode":"test","run":false}
+{"event":"discover-case","name":"owl","mode":"test","run":false}
+{"event":"discover-complete","elapsed_s":"[..]","seed":null}
+{"event":"suite-start"}
+{"event":"case-start","name":"bear"}
+{"event":"case-complete","name":"bear","mode":"test","status":"ignored","message":"fails","elapsed_s":"[..]"}
+{"event":"case-start","name":"cat"}
+{"event":"case-complete","name":"cat","mode":"test","status":null,"message":null,"elapsed_s":"[..]"}
+{"event":"suite-complete","elapsed_s":"[..]"}
+"#,
+        r#"{"event":"discover-start"}
+{"event":"discover-case","name":"bear","mode":"test","run":true}
+{"event":"discover-case","name":"bunny","mode":"test","run":false}
+{"event":"discover-case","name":"cat","mode":"test","run":true}
+{"event":"discover-case","name":"dog","mode":"test","run":false}
+{"event":"discover-case","name":"fly","mode":"test","run":false}
+{"event":"discover-case","name":"fox","mode":"test","run":false}
+{"event":"discover-case","name":"frog","mode":"test","run":false}
+{"event":"discover-case","name":"owl","mode":"test","run":false}
+{"event":"discover-complete","elapsed_s":"[..]","seed":null}
+{"event":"suite-start"}
+[..]
+[..]
+[..]
+[..]
+{"event":"suite-complete","elapsed_s":"[..]"}
 "#,
     )
 }

@@ -24,6 +24,7 @@ pre-release-replacements = [
 
 [features]
 default = []
+json = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
 anstream = "0.3.1"
@@ -31,5 +32,7 @@ anstyle = "1.0.0"
 lexarg = { version = "0.1.0", path = "../lexarg" }
 lexarg-error = { version = "0.1.0", path = "../lexarg-error" }
 libtest-lexarg = { version = "0.1.0", path = "../libtest-lexarg" }
+serde = { version = "1.0.160", features = ["derive"], optional = true }
+serde_json = { version = "1.0.96", optional = true }
 
 [dev-dependencies]

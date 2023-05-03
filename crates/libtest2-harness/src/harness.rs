@@ -71,9 +71,9 @@ impl Harness {
 
         self.cases
             .sort_unstable_by_key(|case| case.name().to_owned());
-        let seed = crate::shuffle::get_shuffle_seed(&opts);
+        let seed = shuffle::get_shuffle_seed(&opts);
         if let Some(seed) = seed {
-            crate::shuffle::shuffle_tests(seed, &mut self.cases);
+            shuffle::shuffle_tests(seed, &mut self.cases);
         }
 
         match run(&opts, &self.cases, num_filtered_out) {

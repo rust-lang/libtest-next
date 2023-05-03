@@ -207,9 +207,6 @@ fn run(
     if opts.time_options.is_some() {
         todo!("`--report-time` / `--ensure-time` are not yet supported");
     }
-    if opts.fail_fast {
-        todo!("fail-fast is not yet supported");
-    }
     if opts.options.display_output {
         todo!("`--show-output` is not yet supported");
     }
@@ -248,6 +245,9 @@ fn run(
         })?;
 
         success &= status != Some(notify::RunStatus::Failed);
+        if !success && opts.fail_fast {
+            break;
+        }
     }
 
     notifier.notify(notify::Event::SuiteComplete {

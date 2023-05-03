@@ -242,7 +242,7 @@ fn run(
         })?;
         let timer = std::time::Instant::now();
 
-        let outcome = case.run(&state);
+        let outcome = __rust_begin_short_backtrace(|| case.run(&state));
 
         let err = outcome.as_ref().err();
         let status = err.map(|e| e.status());
@@ -266,4 +266,13 @@ fn run(
     })?;
 
     Ok(success)
+}
+
+/// Fixed frame used to clean the backtrace with `RUST_BACKTRACE=1`.
+#[inline(never)]
+fn __rust_begin_short_backtrace<T, F: FnOnce() -> T>(f: F) -> T {
+    let result = f();
+
+    // prevent this frame from being tail-call optimised away
+    std::hint::black_box(result)
 }

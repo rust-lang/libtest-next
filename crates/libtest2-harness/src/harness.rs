@@ -30,13 +30,10 @@ impl Harness {
 
     pub fn main(mut self) -> ! {
         let mut parser = cli::Parser::new(&self.raw);
-        let opts = match parse(&mut parser) {
-            Ok(opts) => opts,
-            Err(err) => {
-                eprintln!("{}", err);
-                std::process::exit(1);
-            }
-        };
+        let opts = parse(&mut parser).unwrap_or_else(|err| {
+            eprintln!("{}", err);
+            std::process::exit(1)
+        });
 
         match opts.color {
             libtest_lexarg::ColorConfig::AutoColor => anstream::ColorChoice::Auto,

@@ -1,11 +1,15 @@
 #[cfg(feature = "json")]
 mod json;
+#[cfg(feature = "junit")]
+mod junit;
 mod pretty;
 mod summary;
 mod terse;
 
 #[cfg(feature = "json")]
 pub(crate) use json::*;
+#[cfg(feature = "junit")]
+pub(crate) use junit::*;
 pub(crate) use pretty::*;
 pub(crate) use summary::*;
 pub(crate) use terse::*;

@@ -23,8 +23,9 @@ pre-release-replacements = [
 ]
 
 [features]
-default = ["json"]
+default = ["json", "junit"]
 json = ["libtest2-harness/json"]
+junit = ["libtest2-harness/junit"]
 
 [dependencies]
 libtest2-harness = { version = "0.1.0", path = "../libtest2-harness" }

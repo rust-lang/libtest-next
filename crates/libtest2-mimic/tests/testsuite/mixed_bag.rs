@@ -621,6 +621,7 @@ test result: FAILED. 1 passed; 1 failed; 0 ignored; 6 filtered out; finished in 
 }
 
 #[test]
+#[cfg(feature = "json")]
 fn list_json() {
     check(
         &["-Zunstable-options", "--format=json", "--list", "a"],
@@ -651,6 +652,7 @@ fn list_json() {
 }
 
 #[test]
+#[cfg(feature = "json")]
 fn test_json() {
     check(
         &["-Zunstable-options", "--format=json", "a"],
@@ -688,6 +690,54 @@ fn test_json() {
 [..]
 [..]
 {"event":"suite-complete","elapsed_s":"[..]"}
+"#,
+    )
+}
+
+#[test]
+#[cfg(feature = "junit")]
+fn list_junit() {
+    check(
+        &["-Zunstable-options", "--format=junit", "--list", "a"],
+        0,
+        r#"bear: test
+cat: test
+
+2 tests
+
+"#,
+        r#"bear: test
+cat: test
+
+2 tests
+
+"#,
+    )
+}
+
+#[test]
+#[cfg(feature = "junit")]
+fn test_junit() {
+    check(
+        &["-Zunstable-options", "--format=junit", "a"],
+        0,
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+<testsuite name="test" package="test" id="0" tests="2" errors="0" failures="0" skipped="1" >
+<testcase classname="crate" name="cat" time="0.000s"/>
+<system-out/>
+<system-err/>
+</testsuite>
+</testsuites>
+"#,
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+<testsuite name="test" package="test" id="0" tests="2" errors="0" failures="0" skipped="1" >
+<testcase classname="crate" name="cat" time="0.000s"/>
+<system-out/>
+<system-err/>
+</testsuite>
+</testsuites>
 "#,
     )
 }

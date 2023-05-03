@@ -7,6 +7,7 @@ use super::OK;
 #[derive(Debug)]
 pub(crate) struct PrettyRunNotifier<W> {
     writer: W,
+    is_multithreaded: bool,
     summary: super::Summary,
     name_width: usize,
 }
@@ -15,6 +16,7 @@ impl<W: std::io::Write> PrettyRunNotifier<W> {
     pub(crate) fn new(writer: W) -> Self {
         Self {
             writer,
+            is_multithreaded: false,
             summary: Default::default(),
             name_width: 0,
         }
@@ -22,6 +24,10 @@ impl<W: std::io::Write> PrettyRunNotifier<W> {
 }
 
 impl<W: std::io::Write> super::Notifier for PrettyRunNotifier<W> {
+    fn threaded(&mut self, yes: bool) {
+        self.is_multithreaded = yes;
+    }
+
     fn notify(&mut self, event: Event) -> std::io::Result<()> {
         self.summary.notify(event.clone())?;
         match event {
@@ -36,16 +42,21 @@ impl<W: std::io::Write> super::Notifier for PrettyRunNotifier<W> {
                 self.summary.write_start(&mut self.writer)?;
             }
             Event::CaseStart { name, .. } => {
-                write!(self.writer, "test {: <1$} ... ", name, self.name_width)?;
-                self.writer.flush()?;
+                if !self.is_multithreaded {
+                    write!(self.writer, "test {: <1$} ... ", name, self.name_width)?;
+                    self.writer.flush()?;
+                }
             }
-            Event::CaseComplete { status, .. } => {
+            Event::CaseComplete { name, status, .. } => {
                 let (s, style) = match status {
                     Some(RunStatus::Ignored) => ("ignored", IGNORED),
                     Some(RunStatus::Failed) => ("FAILED", FAILED),
                     None => ("ok", OK),
                 };
 
+                if self.is_multithreaded {
+                    write!(self.writer, "test {: <1$} ... ", name, self.name_width)?;
+                }
                 writeln!(self.writer, "{}{s}{}", style.render(), style.render_reset())?;
             }
             Event::SuiteComplete { .. } => {

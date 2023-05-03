@@ -87,14 +87,7 @@ test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in 
 "#,
         r#"
 running 8 tests
-test bear  ... ignored
-test bunny ... ignored
-test cat   ... ok
-test dog   ... FAILED
-test fly   ... ignored
-test fox   ... ok
-test frog  ... ignored
-test owl   ... ignored
+...
 
 failures:
 

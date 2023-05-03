@@ -189,6 +189,8 @@ dependencies = [
  "lexarg",
  "lexarg-error",
  "libtest-lexarg",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

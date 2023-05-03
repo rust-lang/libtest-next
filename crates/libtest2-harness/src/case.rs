@@ -50,25 +50,43 @@ pub enum Source {
 pub type RunResult = Result<(), RunError>;
 
 #[derive(Debug)]
-pub struct RunError(pub(crate) RunErrorInner);
+pub struct RunError {
+    status: notify::RunStatus,
+    cause: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
+}
 
 impl RunError {
-    pub fn cause(cause: impl Into<Fail>) -> Self {
-        Self(RunErrorInner::Failed(cause.into()))
+    pub fn with_cause(cause: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self {
+            status: notify::RunStatus::Failed,
+            cause: Some(Box::new(cause)),
+        }
     }
 
-    pub fn msg(cause: impl std::fmt::Display) -> Self {
-        Self::cause(FailMessage(cause.to_string()))
+    pub fn fail(cause: impl std::fmt::Display) -> Self {
+        Self::with_cause(Message(cause.to_string()))
     }
 
     pub(crate) fn ignore() -> Self {
-        Self(RunErrorInner::Ignored(Ignore { reason: None }))
+        Self {
+            status: notify::RunStatus::Ignored,
+            cause: None,
+        }
     }
 
     pub(crate) fn ignore_for(reason: String) -> Self {
-        Self(RunErrorInner::Ignored(Ignore {
-            reason: Some(reason),
-        }))
+        Self {
+            status: notify::RunStatus::Ignored,
+            cause: Some(Box::new(Message(reason))),
+        }
+    }
+
+    pub(crate) fn status(&self) -> notify::RunStatus {
+        self.status
+    }
+
+    pub(crate) fn cause(&self) -> Option<&(dyn std::error::Error + Send + Sync)> {
+        self.cause.as_ref().map(|b| b.as_ref())
     }
 }
 
@@ -77,57 +95,17 @@ where
     E: std::error::Error + Send + Sync + 'static,
 {
     fn from(error: E) -> Self {
-        Self::cause(error)
+        Self::with_cause(error)
     }
 }
 
 #[derive(Debug)]
-pub(crate) enum RunErrorInner {
-    Failed(Fail),
-    Ignored(Ignore),
-}
+struct Message(String);
 
-#[derive(Debug)]
-pub struct Fail {
-    inner: Box<dyn std::error::Error + Send + Sync + 'static>,
-}
-
-impl<E> From<E> for Fail
-where
-    E: std::error::Error + Send + Sync + 'static,
-{
-    #[cold]
-    fn from(error: E) -> Self {
-        Fail {
-            inner: Box::new(error),
-        }
-    }
-}
-
-impl std::fmt::Display for Fail {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.inner.fmt(formatter)
-    }
-}
-
-#[derive(Debug)]
-pub struct FailMessage(String);
-
-impl std::fmt::Display for FailMessage {
+impl std::fmt::Display for Message {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(formatter)
     }
 }
 
-impl std::error::Error for FailMessage {}
-
-#[derive(Debug)]
-pub struct Ignore {
-    reason: Option<String>,
-}
-
-impl Ignore {
-    pub fn reason(&self) -> Option<&str> {
-        self.reason.as_deref()
-    }
-}
+impl std::error::Error for Message {}

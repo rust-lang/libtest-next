@@ -20,6 +20,8 @@
 //! ```
 //!
 
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 pub use libtest2_harness::Harness;
 pub use libtest2_harness::RunError;
 pub use libtest2_harness::RunResult;

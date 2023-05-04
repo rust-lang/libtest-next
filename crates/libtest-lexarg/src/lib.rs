@@ -3,6 +3,7 @@
 //! This does not drive parsing but provides [`TestOptsParseState`] to plug into the parsing,
 //! allowing additional parsers to be integrated.
 
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_debug_implementations, elided_lifetimes_in_paths)]
 

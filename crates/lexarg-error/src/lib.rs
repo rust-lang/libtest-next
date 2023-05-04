@@ -67,6 +67,7 @@
 //! }
 //! ```
 
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, missing_debug_implementations, elided_lifetimes_in_paths)]
 

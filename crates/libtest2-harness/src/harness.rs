@@ -32,7 +32,7 @@ impl Harness {
 
     pub fn main(mut self) -> ! {
         let mut parser = cli::Parser::new(&self.raw);
-        let opts = parse(&mut parser).unwrap_or_else(|err| {
+        let mut opts = parse(&mut parser).unwrap_or_else(|err| {
             eprintln!("{}", err);
             std::process::exit(1)
         });
@@ -52,9 +52,12 @@ impl Harness {
             eprintln!("{}", err);
             std::process::exit(1)
         });
+        if self.cases.len() == 1 {
+            opts.test_threads = Some(std::num::NonZeroUsize::new(1).unwrap());
+        }
 
         if !opts.list {
-            match run(&opts, &self.cases, notifier.as_mut()) {
+            match run(&opts, self.cases, notifier.as_mut()) {
                 Ok(true) => {}
                 Ok(false) => std::process::exit(ERROR_EXIT_CODE),
                 Err(e) => {
@@ -116,7 +119,18 @@ fn parse(parser: &mut cli::Parser) -> cli::Result<libtest_lexarg::TestOpts> {
         }
     }
 
-    test_opts.finish()
+    let mut opts = test_opts.finish()?;
+    // If the platform is single-threaded we're just going to run
+    // the test synchronously, regardless of the concurrency
+    // level.
+    let supports_threads = !cfg!(target_os = "emscripten") && !cfg!(target_family = "wasm");
+    opts.test_threads = if cfg!(feature = "threads") && supports_threads {
+        opts.test_threads
+            .or_else(|| std::thread::available_parallelism().ok())
+    } else {
+        None
+    };
+    Ok(opts)
 }
 
 fn notifier(opts: &libtest_lexarg::TestOpts) -> std::io::Result<Box<dyn notify::Notifier>> {
@@ -200,7 +214,7 @@ fn discover(
 
 fn run(
     opts: &libtest_lexarg::TestOpts,
-    cases: &[Box<dyn Case>],
+    cases: Vec<Box<dyn Case>>,
     notifier: &mut dyn notify::Notifier,
 ) -> std::io::Result<bool> {
     notifier.notify(notify::Event::SuiteStart)?;
@@ -228,6 +242,10 @@ fn run(
         todo!("`--logfile` is not yet supported");
     }
 
+    let threads = opts.test_threads.map(|t| t.get()).unwrap_or(1);
+    let is_multithreaded = 1 < threads;
+    notifier.threaded(is_multithreaded);
+
     let mut state = State::new();
     let run_ignored = match opts.run_ignored {
         libtest_lexarg::RunIgnored::Yes | libtest_lexarg::RunIgnored::Only => true,
@@ -236,28 +254,100 @@ fn run(
     state.run_ignored(run_ignored);
 
     let mut success = true;
-    for case in cases {
-        notifier.notify(notify::Event::CaseStart {
-            name: case.name().to_owned(),
-        })?;
-        let timer = std::time::Instant::now();
+    if is_multithreaded {
+        struct RunningTest {
+            join_handle: std::thread::JoinHandle<()>,
+        }
 
-        let outcome = __rust_begin_short_backtrace(|| case.run(&state));
+        impl RunningTest {
+            fn join(self, event: &mut notify::Event) {
+                if let Err(_) = self.join_handle.join() {
+                    if let notify::Event::CaseComplete {
+                        status, message, ..
+                    } = event
+                    {
+                        if status.is_none() {
+                            *status = Some(notify::RunStatus::Failed);
+                            *message = Some("panicked after reporting success".to_owned());
+                        }
+                    }
+                }
+            }
+        }
 
-        let err = outcome.as_ref().err();
-        let status = err.map(|e| e.status());
-        let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
-        notifier.notify(notify::Event::CaseComplete {
-            name: case.name().to_owned(),
-            mode: notify::CaseMode::Test,
-            status,
-            message,
-            elapsed_s: Some(notify::Elapsed(timer.elapsed())),
-        })?;
+        // Use a deterministic hasher
+        type TestMap = std::collections::HashMap<
+            String,
+            RunningTest,
+            std::hash::BuildHasherDefault<std::collections::hash_map::DefaultHasher>,
+        >;
 
-        success &= status != Some(notify::RunStatus::Failed);
-        if !success && opts.fail_fast {
-            break;
+        let sync_success = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(success));
+        let mut running_tests: TestMap = Default::default();
+        let mut pending = 0;
+        let state = std::sync::Arc::new(state);
+        let (tx, rx) = std::sync::mpsc::channel::<notify::Event>();
+        let mut remaining = std::collections::VecDeque::from(cases);
+        while pending > 0 || !remaining.is_empty() {
+            while pending < threads && !remaining.is_empty() {
+                let case = remaining.pop_front().unwrap();
+                let name = case.name().to_owned();
+
+                let cfg = std::thread::Builder::new().name(name.to_owned());
+                let tx = tx.clone();
+                let case = std::sync::Arc::new(case);
+                let case_fallback = case.clone();
+                let state = state.clone();
+                let state_fallback = state.clone();
+                let sync_success = sync_success.clone();
+                let sync_success_fallback = sync_success.clone();
+                match cfg.spawn(move || {
+                    let mut notifier = SenderNotifier { tx: tx.clone() };
+                    let case_success = run_case(case.as_ref().as_ref(), &state, &mut notifier)
+                        .expect("`SenderNotifier` is infallible");
+                    if !case_success {
+                        sync_success.store(case_success, std::sync::atomic::Ordering::Relaxed);
+                    }
+                }) {
+                    Ok(join_handle) => {
+                        running_tests.insert(name.clone(), RunningTest { join_handle });
+                        pending += 1;
+                    }
+                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        // `ErrorKind::WouldBlock` means hitting the thread limit on some
+                        // platforms, so run the test synchronously here instead.
+                        let case_success =
+                            run_case(case_fallback.as_ref().as_ref(), &state_fallback, notifier)
+                                .expect("`SenderNotifier` is infallible");
+                        if !case_success {
+                            sync_success_fallback
+                                .store(case_success, std::sync::atomic::Ordering::Relaxed);
+                        }
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                }
+            }
+
+            let mut event = rx.recv().unwrap();
+            if let notify::Event::CaseComplete { name, .. } = &event {
+                let running_test = running_tests.remove(name).unwrap();
+                running_test.join(&mut event);
+                pending -= 1;
+            }
+            notifier.notify(event)?;
+            success &= sync_success.load(std::sync::atomic::Ordering::SeqCst);
+            if !success && opts.fail_fast {
+                break;
+            }
+        }
+    } else {
+        for case in cases {
+            success &= run_case(case.as_ref(), &state, notifier)?;
+            if !success && opts.fail_fast {
+                break;
+            }
         }
     }
 
@@ -268,6 +358,32 @@ fn run(
     Ok(success)
 }
 
+fn run_case(
+    case: &dyn Case,
+    state: &State,
+    notifier: &mut dyn notify::Notifier,
+) -> std::io::Result<bool> {
+    notifier.notify(notify::Event::CaseStart {
+        name: case.name().to_owned(),
+    })?;
+    let timer = std::time::Instant::now();
+
+    let outcome = __rust_begin_short_backtrace(|| case.run(&state));
+
+    let err = outcome.as_ref().err();
+    let status = err.map(|e| e.status());
+    let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
+    notifier.notify(notify::Event::CaseComplete {
+        name: case.name().to_owned(),
+        mode: notify::CaseMode::Test,
+        status,
+        message,
+        elapsed_s: Some(notify::Elapsed(timer.elapsed())),
+    })?;
+
+    Ok(status != Some(notify::RunStatus::Failed))
+}
+
 /// Fixed frame used to clean the backtrace with `RUST_BACKTRACE=1`.
 #[inline(never)]
 fn __rust_begin_short_backtrace<T, F: FnOnce() -> T>(f: F) -> T {
@@ -275,4 +391,17 @@ fn __rust_begin_short_backtrace<T, F: FnOnce() -> T>(f: F) -> T {
 
     // prevent this frame from being tail-call optimised away
     std::hint::black_box(result)
+}
+
+#[derive(Clone, Debug)]
+struct SenderNotifier {
+    tx: std::sync::mpsc::Sender<notify::Event>,
+}
+
+impl notify::Notifier for SenderNotifier {
+    fn notify(&mut self, event: notify::Event) -> std::io::Result<()> {
+        // If the sender doesn't care, neither do we
+        let _ = self.tx.send(event);
+        Ok(())
+    }
 }

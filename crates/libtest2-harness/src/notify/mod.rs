@@ -15,6 +15,8 @@ pub(crate) use summary::*;
 pub(crate) use terse::*;
 
 pub(crate) trait Notifier {
+    fn threaded(&mut self, _yes: bool) {}
+
     fn notify(&mut self, event: Event) -> std::io::Result<()>;
 }
 

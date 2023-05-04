@@ -26,6 +26,7 @@ pre-release-replacements = [
 default = []
 json = ["dep:serde", "dep:serde_json"]
 junit = []
+threads = []
 
 [dependencies]
 anstream = "0.3.1"

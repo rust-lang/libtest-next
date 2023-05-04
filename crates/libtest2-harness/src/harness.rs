@@ -237,25 +237,7 @@ fn run(
 
     let mut success = true;
     for case in cases {
-        notifier.notify(notify::Event::CaseStart {
-            name: case.name().to_owned(),
-        })?;
-        let timer = std::time::Instant::now();
-
-        let outcome = __rust_begin_short_backtrace(|| case.run(&state));
-
-        let err = outcome.as_ref().err();
-        let status = err.map(|e| e.status());
-        let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
-        notifier.notify(notify::Event::CaseComplete {
-            name: case.name().to_owned(),
-            mode: notify::CaseMode::Test,
-            status,
-            message,
-            elapsed_s: Some(notify::Elapsed(timer.elapsed())),
-        })?;
-
-        success &= status != Some(notify::RunStatus::Failed);
+        success &= run_case(case.as_ref(), &state, notifier)?;
         if !success && opts.fail_fast {
             break;
         }
@@ -266,6 +248,32 @@ fn run(
     })?;
 
     Ok(success)
+}
+
+fn run_case(
+    case: &dyn Case,
+    state: &State,
+    notifier: &mut dyn notify::Notifier,
+) -> std::io::Result<bool> {
+    notifier.notify(notify::Event::CaseStart {
+        name: case.name().to_owned(),
+    })?;
+    let timer = std::time::Instant::now();
+
+    let outcome = __rust_begin_short_backtrace(|| case.run(&state));
+
+    let err = outcome.as_ref().err();
+    let status = err.map(|e| e.status());
+    let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
+    notifier.notify(notify::Event::CaseComplete {
+        name: case.name().to_owned(),
+        mode: notify::CaseMode::Test,
+        status,
+        message,
+        elapsed_s: Some(notify::Elapsed(timer.elapsed())),
+    })?;
+
+    Ok(status != Some(notify::RunStatus::Failed))
 }
 
 /// Fixed frame used to clean the backtrace with `RUST_BACKTRACE=1`.

@@ -194,7 +194,7 @@ fn discover(
         retain_cases.push(retain_case);
         notifier.notify(notify::Event::DiscoverCase {
             name: case.name().to_owned(),
-            mode: notify::CaseMode::Test,
+            mode: notify::RunMode::Test,
             run: retain_case,
         })?;
     }
@@ -397,7 +397,7 @@ fn run_case(
     let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
     notifier.notify(notify::Event::CaseComplete {
         name: case.name().to_owned(),
-        mode: notify::CaseMode::Test,
+        mode: notify::RunMode::Test,
         status,
         message,
         elapsed_s: Some(notify::Elapsed(timer.elapsed())),

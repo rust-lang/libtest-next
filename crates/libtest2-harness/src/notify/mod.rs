@@ -28,7 +28,7 @@ pub(crate) enum Event {
     DiscoverStart,
     DiscoverCase {
         name: String,
-        mode: CaseMode,
+        mode: RunMode,
         run: bool,
     },
     DiscoverComplete {
@@ -43,7 +43,7 @@ pub(crate) enum Event {
     CaseComplete {
         name: String,
         #[allow(dead_code)]
-        mode: CaseMode,
+        mode: RunMode,
         status: Option<RunStatus>,
         message: Option<String>,
         #[allow(dead_code)]
@@ -57,7 +57,7 @@ pub(crate) enum Event {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "json", derive(serde::Serialize))]
 #[cfg_attr(feature = "json", serde(rename_all = "kebab-case"))]
-pub(crate) enum CaseMode {
+pub(crate) enum RunMode {
     Test,
     #[allow(dead_code)]
     Bench,

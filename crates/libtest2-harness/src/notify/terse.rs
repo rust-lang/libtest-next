@@ -1,5 +1,5 @@
-use super::CaseMode;
 use super::Event;
+use super::RunMode;
 use super::RunStatus;
 use super::FAILED;
 use super::IGNORED;
@@ -24,8 +24,8 @@ impl<W: std::io::Write> super::Notifier for TerseListNotifier<W> {
             Event::DiscoverCase { name, mode, run } => {
                 if run {
                     let mode = match mode {
-                        CaseMode::Test => "test",
-                        CaseMode::Bench => "bench",
+                        RunMode::Test => "test",
+                        RunMode::Bench => "bench",
                     };
                     writeln!(self.writer, "{name}: {mode}")?;
                     self.tests += 1;

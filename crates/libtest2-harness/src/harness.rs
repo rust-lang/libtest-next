@@ -32,7 +32,7 @@ impl Harness {
 
     pub fn main(mut self) -> ! {
         let mut parser = cli::Parser::new(&self.raw);
-        let mut opts = parse(&mut parser).unwrap_or_else(|err| {
+        let opts = parse(&mut parser).unwrap_or_else(|err| {
             eprintln!("{}", err);
             std::process::exit(1)
         });
@@ -52,9 +52,6 @@ impl Harness {
             eprintln!("{}", err);
             std::process::exit(1)
         });
-        if self.cases.len() == 1 {
-            opts.test_threads = Some(std::num::NonZeroUsize::new(1).unwrap());
-        }
 
         if !opts.list {
             match run(&opts, self.cases, notifier.as_mut()) {
@@ -243,7 +240,6 @@ fn run(
     }
 
     let threads = opts.test_threads.map(|t| t.get()).unwrap_or(1);
-    let is_multithreaded = 1 < threads;
 
     let mut state = State::new();
     let run_ignored = match opts.run_ignored {
@@ -255,7 +251,7 @@ fn run(
 
     let mut success = true;
 
-    let (exclusive_cases, concurrent_cases) = if !is_multithreaded {
+    let (exclusive_cases, concurrent_cases) = if threads == 1 || cases.len() == 1 {
         (cases, vec![])
     } else {
         (vec![], cases)

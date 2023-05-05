@@ -368,7 +368,24 @@ fn run_case(
     })?;
     let timer = std::time::Instant::now();
 
-    let outcome = __rust_begin_short_backtrace(|| case.run(&state));
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        __rust_begin_short_backtrace(|| case.run(&state))
+    }))
+    .unwrap_or_else(|e| {
+        // The `panic` information is just an `Any` object representing the
+        // value the panic was invoked with. For most panics (which use
+        // `panic!` like `println!`), this is either `&str` or `String`.
+        let payload = e
+            .downcast_ref::<String>()
+            .map(|s| s.as_str())
+            .or(e.downcast_ref::<&str>().map(|s| *s));
+
+        let msg = match payload {
+            Some(payload) => format!("test panicked: {payload}"),
+            None => format!("test panicked"),
+        };
+        Err(RunError::fail(msg))
+    });
 
     let err = outcome.as_ref().err();
     let status = err.map(|e| e.status());

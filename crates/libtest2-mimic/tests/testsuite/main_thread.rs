@@ -4,16 +4,12 @@ fn check_test_on_main_thread() {
         r#"
 fn main() {
     use libtest2_mimic::Trial;
-    use libtest2_mimic::RunError;
     let outer_thread = std::thread::current().id();
     libtest2_mimic::Harness::with_env()
         .cases(vec![
             Trial::test("check", move |_| {
-                if outer_thread == std::thread::current().id() {
-                    Ok(())
-                } else {
-                    Err(RunError::fail("thread IDs mismatch"))
-                }
+                assert_eq!(outer_thread, std::thread::current().id());
+                Ok(())
             })
         ])
         .main();

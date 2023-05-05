@@ -63,6 +63,15 @@ pub(crate) enum RunMode {
     Bench,
 }
 
+impl RunMode {
+    pub(crate) fn as_str(&self) -> &str {
+        match self {
+            Self::Test => "test",
+            Self::Bench => "bench",
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "json", derive(serde::Serialize))]
 #[cfg_attr(feature = "json", serde(rename_all = "kebab-case"))]

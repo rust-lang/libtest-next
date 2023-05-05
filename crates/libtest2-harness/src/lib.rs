@@ -32,4 +32,5 @@ pub mod cli;
 
 pub use case::*;
 pub use harness::*;
+pub use notify::RunMode;
 pub use state::*;

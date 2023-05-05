@@ -54,12 +54,12 @@ pub(crate) enum Event {
     },
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "json", derive(serde::Serialize))]
 #[cfg_attr(feature = "json", serde(rename_all = "kebab-case"))]
-pub(crate) enum RunMode {
+pub enum RunMode {
+    #[default]
     Test,
-    #[allow(dead_code)]
     Bench,
 }
 

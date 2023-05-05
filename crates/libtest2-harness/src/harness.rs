@@ -246,7 +246,19 @@ fn run(
         libtest_lexarg::RunIgnored::Yes | libtest_lexarg::RunIgnored::Only => true,
         libtest_lexarg::RunIgnored::No => false,
     };
-    state.run_ignored(run_ignored);
+    let mode = match (opts.run_tests, opts.bench_benchmarks) {
+        (true, true) => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "`--test` and `-bench` are mutually exclusive",
+            ));
+        }
+        (true, false) => notify::RunMode::Test,
+        (false, true) => notify::RunMode::Bench,
+        (false, false) => unreachable!("libtest-lexarg` should always ensure at least one is set"),
+    };
+    state.set_mode(mode);
+    state.set_run_ignored(run_ignored);
     let state = std::sync::Arc::new(state);
 
     let mut success = true;
@@ -254,7 +266,9 @@ fn run(
     let (exclusive_cases, concurrent_cases) = if threads == 1 || cases.len() == 1 {
         (cases, vec![])
     } else {
-        cases.into_iter().partition::<Vec<_>, _>(|c| c.exclusive())
+        cases
+            .into_iter()
+            .partition::<Vec<_>, _>(|c| c.exclusive(&state))
     };
     if !concurrent_cases.is_empty() {
         notifier.threaded(true);

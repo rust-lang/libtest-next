@@ -59,7 +59,7 @@ impl Case for Trial {
     fn source(&self) -> Option<&Source> {
         None
     }
-    fn exclusive(&self) -> bool {
+    fn exclusive(&self, _: &State) -> bool {
         false
     }
 

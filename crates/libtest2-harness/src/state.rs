@@ -2,6 +2,7 @@ pub use crate::*;
 
 #[derive(Debug)]
 pub struct State {
+    mode: notify::RunMode,
     run_ignored: bool,
 }
 
@@ -21,14 +22,25 @@ impl State {
             Err(RunError::ignore_for(reason.to_string()))
         }
     }
+
+    pub fn current_mode(&self) -> notify::RunMode {
+        self.mode
+    }
 }
 
 impl State {
     pub(crate) fn new() -> Self {
-        Self { run_ignored: false }
+        Self {
+            mode: Default::default(),
+            run_ignored: false,
+        }
     }
 
-    pub(crate) fn run_ignored(&mut self, yes: bool) {
+    pub(crate) fn set_mode(&mut self, mode: notify::RunMode) {
+        self.mode = mode;
+    }
+
+    pub(crate) fn set_run_ignored(&mut self, yes: bool) {
         self.run_ignored = yes;
     }
 }

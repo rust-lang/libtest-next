@@ -9,6 +9,8 @@ pub trait Case: Send + Sync + 'static {
     fn name(&self) -> &str;
     fn kind(&self) -> TestKind;
     fn source(&self) -> Option<&Source>;
+    /// This case cannot run in parallel to other cases within this binary
+    fn exclusive(&self) -> bool;
 
     fn run(&self, state: &State) -> Result<(), RunError>;
 }

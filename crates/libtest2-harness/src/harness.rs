@@ -254,7 +254,7 @@ fn run(
     let (exclusive_cases, concurrent_cases) = if threads == 1 || cases.len() == 1 {
         (cases, vec![])
     } else {
-        (vec![], cases)
+        cases.into_iter().partition::<Vec<_>, _>(|c| c.exclusive())
     };
     if !concurrent_cases.is_empty() {
         notifier.threaded(true);

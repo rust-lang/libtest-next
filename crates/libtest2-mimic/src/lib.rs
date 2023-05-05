@@ -59,6 +59,9 @@ impl Case for Trial {
     fn source(&self) -> Option<&Source> {
         None
     }
+    fn exclusive(&self) -> bool {
+        false
+    }
 
     fn run(&self, state: &State) -> Result<(), RunError> {
         (self.runner)(state)

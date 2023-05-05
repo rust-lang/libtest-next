@@ -244,7 +244,6 @@ fn run(
 
     let threads = opts.test_threads.map(|t| t.get()).unwrap_or(1);
     let is_multithreaded = 1 < threads;
-    notifier.threaded(is_multithreaded);
 
     let mut state = State::new();
     let run_ignored = match opts.run_ignored {
@@ -252,9 +251,17 @@ fn run(
         libtest_lexarg::RunIgnored::No => false,
     };
     state.run_ignored(run_ignored);
+    let state = std::sync::Arc::new(state);
 
     let mut success = true;
-    if is_multithreaded {
+
+    let (exclusive_cases, concurrent_cases) = if !is_multithreaded {
+        (cases, vec![])
+    } else {
+        (vec![], cases)
+    };
+    if !concurrent_cases.is_empty() {
+        notifier.threaded(true);
         struct RunningTest {
             join_handle: std::thread::JoinHandle<()>,
         }
@@ -285,9 +292,8 @@ fn run(
         let sync_success = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(success));
         let mut running_tests: TestMap = Default::default();
         let mut pending = 0;
-        let state = std::sync::Arc::new(state);
         let (tx, rx) = std::sync::mpsc::channel::<notify::Event>();
-        let mut remaining = std::collections::VecDeque::from(cases);
+        let mut remaining = std::collections::VecDeque::from(concurrent_cases);
         while pending > 0 || !remaining.is_empty() {
             while pending < threads && !remaining.is_empty() {
                 let case = remaining.pop_front().unwrap();
@@ -342,8 +348,11 @@ fn run(
                 break;
             }
         }
-    } else {
-        for case in cases {
+    }
+
+    if !exclusive_cases.is_empty() {
+        notifier.threaded(false);
+        for case in exclusive_cases {
             success &= run_case(case.as_ref(), &state, notifier)?;
             if !success && opts.fail_fast {
                 break;

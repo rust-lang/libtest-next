@@ -37,6 +37,9 @@ labels:
   - name: "A-pytest"
     description: "Area: pytest-like framework implemented on top of the new harness"
     color: '#f7e101'
+  - name: "A-criterion"
+    description: "Area: criterion-like framework implemented on top of the new harness"
+    color: '#f7e101'
   - name: "A-mimic"
     description: "Area: libtest-mimic implemented on top of the new harness"
     color: '#f7e101'

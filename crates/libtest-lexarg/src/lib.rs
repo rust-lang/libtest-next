@@ -342,7 +342,7 @@ impl TestOptsParseState {
                 self.opts.logfile = Some(std::path::PathBuf::from(path));
             }
             Arg::Long("nocapture") => {
-                self.opts.nocapture;
+                self.opts.nocapture = true;
             }
             Arg::Long("test-threads") => {
                 let test_threads = parser

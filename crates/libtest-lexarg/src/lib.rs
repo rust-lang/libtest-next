@@ -175,19 +175,10 @@ impl TimeThreshold {
 
 /// Options for the test run defined by the caller (instead of CLI arguments).
 /// In case we want to add other options as well, just add them in this struct.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Options {
     pub display_output: bool,
     pub panic_abort: bool,
-}
-
-impl Default for Options {
-    fn default() -> Self {
-        Self {
-            display_output: false,
-            panic_abort: false,
-        }
-    }
 }
 
 pub const UNSTABLE_OPTIONS: &str = "unstable-options";
@@ -428,15 +419,10 @@ impl TestOptsParseState {
                 self.opts.allowed_unstable.push(feature.to_owned());
             }
             Arg::Long("report-time") => {
-                self.opts
-                    .time_options
-                    .get_or_insert_with(|| Default::default());
+                self.opts.time_options.get_or_insert_with(Default::default);
             }
             Arg::Long("ensure-time") => {
-                let time = self
-                    .opts
-                    .time_options
-                    .get_or_insert_with(|| Default::default());
+                let time = self.opts.time_options.get_or_insert_with(Default::default);
                 time.error_on_excess = true;
                 if let Some(threshold) = TimeThreshold::from_env_var("RUST_TEST_TIME_UNIT")? {
                     time.unit_threshold = threshold;

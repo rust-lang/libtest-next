@@ -40,7 +40,7 @@ harness = {harness}
     package_root
 }
 
-pub fn compile_test(package_root: &std::path::PathBuf) -> std::path::PathBuf {
+pub fn compile_test(package_root: &std::path::Path) -> std::path::PathBuf {
     let manifest_path = package_root.join("Cargo.toml");
     let target_name = package_root.file_name().unwrap().to_str().unwrap();
     let args = [
@@ -52,7 +52,7 @@ pub fn compile_test(package_root: &std::path::PathBuf) -> std::path::PathBuf {
 
 fn mimic_relpath(root: &std::path::Path) -> std::path::PathBuf {
     let current_dir = std::env::current_dir().unwrap();
-    let relpath = pathdiff::diff_paths(&current_dir, &root).unwrap();
+    let relpath = pathdiff::diff_paths(current_dir, root).unwrap();
     let normalized = relpath.as_os_str().to_str().unwrap().replace('\\', "/");
     std::path::PathBuf::from(normalized)
 }
@@ -66,11 +66,11 @@ fn tempdir() -> std::path::PathBuf {
 
     let tempdir = std::path::Path::new(TEMPDIR);
     std::fs::create_dir_all(tempdir).unwrap();
-    dunce::canonicalize(&tempdir).unwrap()
+    dunce::canonicalize(tempdir).unwrap()
 }
 
 mod tests {
-    pub fn compile_test<'a>(
+    pub fn compile_test(
         manifest_path: &std::path::Path,
         target_name: &str,
         args: impl IntoIterator<Item = impl AsRef<std::ffi::OsStr>>,

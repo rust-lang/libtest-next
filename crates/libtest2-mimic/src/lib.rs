@@ -33,6 +33,7 @@ use libtest2_harness::Source;
 
 pub struct Trial {
     name: String,
+    #[allow(clippy::type_complexity)]
     runner: Box<dyn Fn(&State) -> Result<(), RunError> + Send + Sync>,
 }
 

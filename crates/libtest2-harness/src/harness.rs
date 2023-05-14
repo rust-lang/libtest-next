@@ -171,7 +171,7 @@ fn discover(
 
     // Do this first so it applies to both discover and running
     cases.sort_unstable_by_key(|case| case.name().to_owned());
-    let seed = shuffle::get_shuffle_seed(&opts);
+    let seed = shuffle::get_shuffle_seed(opts);
     if let Some(seed) = seed {
         shuffle::shuffle_tests(seed, cases);
     }
@@ -261,7 +261,7 @@ fn run(
 
         impl RunningTest {
             fn join(self, event: &mut notify::Event) {
-                if let Err(_) = self.join_handle.join() {
+                if self.join_handle.join().is_err() {
                     if let notify::Event::CaseComplete {
                         status, message, ..
                     } = event
@@ -369,7 +369,7 @@ fn run_case(
     let timer = std::time::Instant::now();
 
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        __rust_begin_short_backtrace(|| case.run(&state))
+        __rust_begin_short_backtrace(|| case.run(state))
     }))
     .unwrap_or_else(|e| {
         // The `panic` information is just an `Any` object representing the
@@ -378,7 +378,7 @@ fn run_case(
         let payload = e
             .downcast_ref::<String>()
             .map(|s| s.as_str())
-            .or(e.downcast_ref::<&str>().map(|s| *s));
+            .or(e.downcast_ref::<&str>().copied());
 
         let msg = match payload {
             Some(payload) => format!("test panicked: {payload}"),

@@ -1,4 +1,6 @@
-pub fn new_test(test: &str, harness: bool) -> std::path::PathBuf {
+use std::path::{Path, PathBuf};
+
+pub fn new_test(test: &str, harness: bool) -> PathBuf {
     static SUFFIX: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
     let suffix = SUFFIX.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     let target_name = format!("t{suffix}");
@@ -40,7 +42,7 @@ harness = {harness}
     package_root
 }
 
-pub fn compile_test(package_root: &std::path::PathBuf) -> std::path::PathBuf {
+pub fn compile_test(package_root: &Path) -> PathBuf {
     let manifest_path = package_root.join("Cargo.toml");
     let target_name = package_root.file_name().unwrap().to_str().unwrap();
     let args = [
@@ -50,27 +52,27 @@ pub fn compile_test(package_root: &std::path::PathBuf) -> std::path::PathBuf {
     tests::compile_test(&manifest_path, target_name, args)
 }
 
-fn mimic_relpath(root: &std::path::Path) -> std::path::PathBuf {
+fn mimic_relpath(root: &Path) -> PathBuf {
     let current_dir = std::env::current_dir().unwrap();
-    let relpath = pathdiff::diff_paths(&current_dir, &root).unwrap();
+    let relpath = pathdiff::diff_paths(current_dir, root).unwrap();
     let normalized = relpath.as_os_str().to_str().unwrap().replace('\\', "/");
-    std::path::PathBuf::from(normalized)
+    PathBuf::from(normalized)
 }
 
-fn target_dir() -> std::path::PathBuf {
+fn target_dir() -> PathBuf {
     tempdir().join("libtest2_mimic_target")
 }
 
-fn tempdir() -> std::path::PathBuf {
+fn tempdir() -> PathBuf {
     const TEMPDIR: &str = env!("CARGO_TARGET_TMPDIR");
 
-    let tempdir = std::path::Path::new(TEMPDIR);
+    let tempdir = Path::new(TEMPDIR);
     std::fs::create_dir_all(tempdir).unwrap();
-    dunce::canonicalize(&tempdir).unwrap()
+    dunce::canonicalize(tempdir).unwrap()
 }
 
 mod tests {
-    pub fn compile_test<'a>(
+    pub fn compile_test(
         manifest_path: &std::path::Path,
         target_name: &str,
         args: impl IntoIterator<Item = impl AsRef<std::ffi::OsStr>>,

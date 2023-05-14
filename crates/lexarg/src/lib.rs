@@ -119,6 +119,7 @@ impl<'a> Parser<'a> {
     ///
     /// Options that are not valid unicode are transformed with replacement
     /// characters as by [`String::from_utf8_lossy`].
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Arg<'a>> {
         // Always reset
         self.was_attached = false;
@@ -784,7 +785,7 @@ mod tests {
     }
 
     /// Run many sequences of methods on a Parser.
-    fn exhaust(parser: Parser<'_>, path: Vec<String>) {
+    fn exhaust(parser: Parser<'_>, mut path: Vec<String>) {
         if path.len() > 100 {
             panic!("Stuck in loop: {:?}", path);
         }
@@ -806,7 +807,6 @@ mod tests {
                 let mut parser = parser.clone();
                 let next = parser.flag_value();
                 assert!(next.is_some(), "{next:?} via {path:?}",);
-                let mut path = path.clone();
                 path.push(format!("pending-value-{:?}", next));
                 exhaust(parser, path);
             }
@@ -839,7 +839,7 @@ mod tests {
                             matches!(parser.state, None | Some(State::Escaped)),
                             "{next:?} via {path:?}",
                         );
-                        if parser.state == None && !parser.was_attached {
+                        if parser.state.is_none() && !parser.was_attached {
                             assert_eq!(parser.current, parser.raw.len(), "{next:?} via {path:?}",);
                         }
                     }
@@ -848,7 +848,6 @@ mod tests {
                             matches!(parser.state, None | Some(State::Escaped)),
                             "{next:?} via {path:?}",
                         );
-                        let mut path = path.clone();
                         path.push(format!("value-{:?}", next));
                         exhaust(parser, path);
                     }

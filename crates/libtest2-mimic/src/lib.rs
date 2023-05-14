@@ -31,9 +31,11 @@ pub use libtest2_harness::TestKind;
 use libtest2_harness::Case;
 use libtest2_harness::Source;
 
+type Runner = Box<dyn Fn(&State) -> Result<(), RunError> + Send + Sync>;
+
 pub struct Trial {
     name: String,
-    runner: Box<dyn Fn(&State) -> Result<(), RunError> + Send + Sync>,
+    runner: Runner,
 }
 
 impl Trial {

@@ -68,7 +68,7 @@ impl Summary {
             // Print summary list of failed tests
             writeln!(writer)?;
             writeln!(writer, "failures:")?;
-            for (name, _) in &self.failures {
+            for name in self.failures.keys() {
                 writeln!(writer, "    {}", name)?;
             }
         }

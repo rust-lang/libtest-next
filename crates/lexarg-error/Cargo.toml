@@ -28,4 +28,4 @@ default = []
 [dependencies]
 
 [dev-dependencies]
-lexarg.path = "../lexarg"
+lexarg = { "version" = "0.1.0", path = "../lexarg" }

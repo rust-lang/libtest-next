@@ -32,7 +32,7 @@ impl Harness {
 
     pub fn main(mut self) -> ! {
         let mut parser = cli::Parser::new(&self.raw);
-        let mut opts = parse(&mut parser).unwrap_or_else(|err| {
+        let opts = parse(&mut parser).unwrap_or_else(|err| {
             eprintln!("{}", err);
             std::process::exit(1)
         });
@@ -52,9 +52,6 @@ impl Harness {
             eprintln!("{}", err);
             std::process::exit(1)
         });
-        if self.cases.len() == 1 {
-            opts.test_threads = Some(std::num::NonZeroUsize::new(1).unwrap());
-        }
 
         if !opts.list {
             match run(&opts, self.cases, notifier.as_mut()) {
@@ -197,7 +194,7 @@ fn discover(
         retain_cases.push(retain_case);
         notifier.notify(notify::Event::DiscoverCase {
             name: case.name().to_owned(),
-            mode: notify::CaseMode::Test,
+            mode: notify::RunMode::Test,
             run: retain_case,
         })?;
     }
@@ -243,18 +240,38 @@ fn run(
     }
 
     let threads = opts.test_threads.map(|t| t.get()).unwrap_or(1);
-    let is_multithreaded = 1 < threads;
-    notifier.threaded(is_multithreaded);
 
     let mut state = State::new();
     let run_ignored = match opts.run_ignored {
         libtest_lexarg::RunIgnored::Yes | libtest_lexarg::RunIgnored::Only => true,
         libtest_lexarg::RunIgnored::No => false,
     };
-    state.run_ignored(run_ignored);
+    let mode = match (opts.run_tests, opts.bench_benchmarks) {
+        (true, true) => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "`--test` and `-bench` are mutually exclusive",
+            ));
+        }
+        (true, false) => notify::RunMode::Test,
+        (false, true) => notify::RunMode::Bench,
+        (false, false) => unreachable!("libtest-lexarg` should always ensure at least one is set"),
+    };
+    state.set_mode(mode);
+    state.set_run_ignored(run_ignored);
+    let state = std::sync::Arc::new(state);
 
     let mut success = true;
-    if is_multithreaded {
+
+    let (exclusive_cases, concurrent_cases) = if threads == 1 || cases.len() == 1 {
+        (cases, vec![])
+    } else {
+        cases
+            .into_iter()
+            .partition::<Vec<_>, _>(|c| c.exclusive(&state))
+    };
+    if !concurrent_cases.is_empty() {
+        notifier.threaded(true);
         struct RunningTest {
             join_handle: std::thread::JoinHandle<()>,
         }
@@ -285,9 +302,8 @@ fn run(
         let sync_success = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(success));
         let mut running_tests: TestMap = Default::default();
         let mut pending = 0;
-        let state = std::sync::Arc::new(state);
         let (tx, rx) = std::sync::mpsc::channel::<notify::Event>();
-        let mut remaining = std::collections::VecDeque::from(cases);
+        let mut remaining = std::collections::VecDeque::from(concurrent_cases);
         while pending > 0 || !remaining.is_empty() {
             while pending < threads && !remaining.is_empty() {
                 let case = remaining.pop_front().unwrap();
@@ -342,8 +358,11 @@ fn run(
                 break;
             }
         }
-    } else {
-        for case in cases {
+    }
+
+    if !exclusive_cases.is_empty() {
+        notifier.threaded(false);
+        for case in exclusive_cases {
             success &= run_case(case.as_ref(), &state, notifier)?;
             if !success && opts.fail_fast {
                 break;
@@ -392,7 +411,7 @@ fn run_case(
     let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
     notifier.notify(notify::Event::CaseComplete {
         name: case.name().to_owned(),
-        mode: notify::CaseMode::Test,
+        mode: notify::RunMode::Test,
         status,
         message,
         elapsed_s: Some(notify::Elapsed(timer.elapsed())),

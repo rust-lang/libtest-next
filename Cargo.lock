@@ -181,6 +181,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "libtest2"
+version = "0.1.0"
+dependencies = [
+ "cmd",
+ "dunce",
+ "escargot",
+ "libtest2-harness",
+ "once_cell",
+ "pathdiff",
+ "snapbox",
+]
+
+[[package]]
 name = "libtest2-harness"
 version = "0.1.0"
 dependencies = [

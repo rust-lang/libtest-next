@@ -1,0 +1,40 @@
+[package]
+name = "libtest2"
+version = "0.1.0"
+description = "An experimental replacement for libtest"
+keywords = ["libtest"]
+categories = ["development-tools::testing"]
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+include.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.release]
+pre-release-replacements = [
+  {file="CHANGELOG.md", search="Unreleased", replace="{{version}}", min=1},
+  {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
+  {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
+  {file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## [Unreleased] - ReleaseDate\n", exactly=1},
+  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/epage/pytest-rs/compare/{{tag_name}}...HEAD", exactly=1},
+]
+
+[features]
+default = ["json", "junit", "threads"]
+json = ["libtest2-harness/json"]
+junit = ["libtest2-harness/junit"]
+threads = ["libtest2-harness/threads"]
+
+[dependencies]
+libtest2-harness = { version = "0.1.0", path = "../libtest2-harness" }
+
+[dev-dependencies]
+cmd = "0.0.0"
+dunce = "1.0.4"
+escargot = "0.5.7"
+once_cell = "1.17.1"
+pathdiff = "0.2.1"
+snapbox = "0.4.11"

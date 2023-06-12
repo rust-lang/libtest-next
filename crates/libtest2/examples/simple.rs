@@ -1,17 +1,14 @@
 use libtest2::RunError;
 use libtest2::RunResult;
 use libtest2::State;
-use libtest2::Trial;
 
-fn main() {
-    libtest2::Harness::with_env()
-        .case(Trial::test("check_toph", check_toph))
-        .case(Trial::test("check_katara", check_katara))
-        .case(Trial::test("check_sokka", check_sokka))
-        .case(Trial::test("long_computation", long_computation))
-        .case(Trial::test("compile_fail_dummy", compile_fail_dummy))
-        .main();
-}
+libtest2::libtest2_main!(
+    check_toph,
+    check_katara,
+    check_sokka,
+    long_computation,
+    compile_fail_dummy
+);
 
 // Tests
 

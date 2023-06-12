@@ -3,15 +3,18 @@ fn test_cmd() -> snapbox::cmd::Command {
         once_cell::sync::Lazy::new(|| {
             let package_root = crate::util::new_test(
                 r#"
-fn main() {
-    use libtest2::Trial;
-    libtest2::Harness::with_env()
-        .cases(vec![
-            Trial::test("foo", |_| Ok(())),
-            Trial::test("bar", |_| Ok(())),
-            Trial::test("barro", |_| Ok(())),
-        ])
-        .main();
+libtest2::libtest2_main!(foo, bar, barro);
+
+fn foo(_state: &libtest2::State) -> libtest2::RunResult {
+    Ok(())
+}
+
+fn bar(_state: &libtest2::State) -> libtest2::RunResult {
+    Ok(())
+}
+
+fn barro(_state: &libtest2::State) -> libtest2::RunResult {
+    Ok(())
 }
 "#,
                 false,

@@ -3,36 +3,43 @@ fn test_cmd() -> snapbox::cmd::Command {
         once_cell::sync::Lazy::new(|| {
             let package_root = crate::util::new_test(
                 r#"
-fn main() {
-    use libtest2::Trial;
-    use libtest2::RunError;
-    libtest2::Harness::with_env()
-        .cases(vec![
-            Trial::test("cat", |_| Ok(())),
-            Trial::test("dog", |_| Err(RunError::fail("was not a good boy"))),
-            Trial::test("fox", |_| Ok(())),
-            Trial::test("bunny", |state| {
-                state.ignore_for("fails")?;
-                Err(RunError::fail("jumped too high"))
-            }),
-            Trial::test("frog", |state| {
-                state.ignore_for("slow")?;
-                Ok(())
-            }),
-            Trial::test("owl", |state| {
-                state.ignore_for("fails")?;
-                Err(RunError::fail("broke neck"))
-            }),
-            Trial::test("fly", |state| {
-                state.ignore_for("fails")?;
-                Ok(())
-            }),
-            Trial::test("bear", |state| {
-                state.ignore_for("fails")?;
-                Err(RunError::fail("no honey"))
-            }),
-        ])
-        .main();
+libtest2::libtest2_main!(cat, dog, fox, bunny, frog, owl, fly, bear);
+
+fn cat(_state: &libtest2::State) -> libtest2::RunResult {
+    Ok(())
+}
+
+fn dog(_state: &libtest2::State) -> libtest2::RunResult {
+    Err(libtest2::RunError::fail("was not a good boy"))
+}
+
+fn fox(_state: &libtest2::State) -> libtest2::RunResult {
+    Ok(())
+}
+
+fn bunny(state: &libtest2::State) -> libtest2::RunResult {
+    state.ignore_for("fails")?;
+    Err(libtest2::RunError::fail("jumped too high"))
+}
+
+fn frog(state: &libtest2::State) -> libtest2::RunResult {
+    state.ignore_for("slow")?;
+    Ok(())
+}
+
+fn owl(state: &libtest2::State) -> libtest2::RunResult {
+    state.ignore_for("fails")?;
+    Err(libtest2::RunError::fail("broke neck"))
+}
+
+fn fly(state: &libtest2::State) -> libtest2::RunResult {
+    state.ignore_for("fails")?;
+    Ok(())
+}
+
+fn bear(state: &libtest2::State) -> libtest2::RunResult {
+    state.ignore_for("fails")?;
+    Err(libtest2::RunError::fail("no honey"))
 }
 "#,
                 false,

@@ -67,3 +67,15 @@ impl Case for Trial {
         (self.runner)(state)
     }
 }
+
+/// Expands to the test harness
+#[macro_export]
+macro_rules! libtest2_main {
+    ( $( $test:path ),* $(,)*) => {
+        fn main() {
+            ::libtest2::Harness::with_env()
+                $(.case(::libtest2::Trial::test(::std::stringify!($test), $test)))*
+                .main();
+        }
+    }
+}

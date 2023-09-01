@@ -11,9 +11,23 @@ dependencies = [
  "anstyle",
  "anstyle-parse",
  "anstyle-query",
- "anstyle-wincon",
+ "anstyle-wincon 1.0.1",
  "colorchoice",
  "is-terminal",
+ "utf8parse",
+]
+
+[[package]]
+name = "anstream"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f58811cfac344940f1a400b6e6231ce35171f614f26439e80f8c1465c5cc0c"
+dependencies = [
+ "anstyle",
+ "anstyle-parse",
+ "anstyle-query",
+ "anstyle-wincon 2.1.0",
+ "colorchoice",
  "utf8parse",
 ]
 
@@ -46,6 +60,16 @@ name = "anstyle-wincon"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "180abfa45703aebe0093f79badacc01b8fd4ea2e35118747e5811127f926e188"
+dependencies = [
+ "anstyle",
+ "windows-sys",
+]
+
+[[package]]
+name = "anstyle-wincon"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58f54d10c6dfa51283a066ceab3ec1ab78d13fae00aa49243a45e4571fb79dfd"
 dependencies = [
  "anstyle",
  "windows-sys",
@@ -110,9 +134,9 @@ dependencies = [
 
 [[package]]
 name = "escargot"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5584ba17d7ab26a8a7284f13e5bd196294dd2f2d79773cff29b9e9edef601a6"
+checksum = "768064bd3a0e2bedcba91dc87ace90beea91acc41b6a01a3ca8e9aa8827461bf"
 dependencies = [
  "log",
  "once_cell",
@@ -197,7 +221,7 @@ dependencies = [
 name = "libtest2-harness"
 version = "0.1.0"
 dependencies = [
- "anstream",
+ "anstream 0.3.1",
  "anstyle",
  "lexarg",
  "lexarg-error",
@@ -329,11 +353,11 @@ checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
 
 [[package]]
 name = "snapbox"
-version = "0.4.11"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6bccd62078347f89a914e3004d94582e13824d4e3d8a816317862884c423835"
+checksum = "ad90eb3a2e3a8031d636d45bd4832751aefd58a291b553f7305a2bacae21aff3"
 dependencies = [
- "anstream",
+ "anstream 0.5.0",
  "anstyle",
  "normalize-line-endings",
  "similar",
@@ -342,11 +366,11 @@ dependencies = [
 
 [[package]]
 name = "snapbox-macros"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaaf09df9f0eeae82be96290918520214530e738a7fe5a351b0f24cf77c0ca31"
+checksum = "95f4ffd811b87da98d0e48285134b7847954bd76e843bb794a893b47ca3ee325"
 dependencies = [
- "anstream",
+ "anstream 0.5.0",
 ]
 
 [[package]]

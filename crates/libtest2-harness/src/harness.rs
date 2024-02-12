@@ -317,14 +317,15 @@ fn run(
                 let state_fallback = state.clone();
                 let sync_success = sync_success.clone();
                 let sync_success_fallback = sync_success.clone();
-                match cfg.spawn(move || {
+                let join_handle = cfg.spawn(move || {
                     let mut notifier = SenderNotifier { tx: tx.clone() };
                     let case_success = run_case(case.as_ref().as_ref(), &state, &mut notifier)
                         .expect("`SenderNotifier` is infallible");
                     if !case_success {
                         sync_success.store(case_success, std::sync::atomic::Ordering::Relaxed);
                     }
-                }) {
+                });
+                match join_handle {
                     Ok(join_handle) => {
                         running_tests.insert(name.clone(), RunningTest { join_handle });
                         pending += 1;

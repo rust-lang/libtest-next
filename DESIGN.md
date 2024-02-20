@@ -65,7 +65,7 @@ See also [eRFC 3558](https://github.com/rust-lang/rfcs/pull/3558)
     {
         "type": "bench",  # (unstable)
         "name": "",
-        "median": 0"
+        "median": 0,
         "deviation": 0,
         "mib_per_second": 0  # or not-present
     },

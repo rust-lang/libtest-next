@@ -55,7 +55,7 @@ See also [eRFC 3558](https://github.com/rust-lang/rfcs/pull/3558)
     },
     {
         "type": "test",
-        "event": "<ok|failed|igored>",
+        "event": "<ok|failed|ignored>",
         "name": "",
         "exec_time": 0.0,  # or not-present (unstable)
         "stdout": "",  # or not-present

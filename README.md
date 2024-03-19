@@ -1,6 +1,6 @@
 # libtest-next
 
-> Experiments for [testing-devex team](https://www.rust-lang.org/governance/teams/dev-tools#Testing%20DevEx%20team) for [libtest](https://doc.rust-lang.org/stable/test/) ideas
+> Experiments for [testing-devex team](https://www.rust-lang.org/governance/teams/dev-tools#team-testing-devex) for [libtest](https://doc.rust-lang.org/stable/test/) ideas
 
 ## About
 

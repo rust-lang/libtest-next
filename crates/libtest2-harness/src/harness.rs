@@ -74,7 +74,7 @@ fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> 
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
 
     let bin = parser.bin();
-    while let Some(arg) = parser.next() {
+    while let Some(arg) = parser.next_arg() {
         match arg {
             cli::Arg::Short('h') | cli::Arg::Long("help") => {
                 let bin = bin

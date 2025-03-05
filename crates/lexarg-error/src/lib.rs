@@ -23,7 +23,7 @@
 //!     let mut raw = std::env::args_os().collect::<Vec<_>>();
 //!     let mut parser = lexarg::Parser::new(&raw);
 //!     parser.bin();
-//!     while let Some(arg) = parser.next() {
+//!     while let Some(arg) = parser.next_arg() {
 //!         match arg {
 //!             Short('n') | Long("number") => {
 //!                 number = parser

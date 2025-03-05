@@ -27,7 +27,7 @@
 //!         match arg {
 //!             Short('n') | Long("number") => {
 //!                 number = parser
-//!                     .flag_value().ok_or_else(|| Error::msg("`--number` requires a value"))?
+//!                     .next_flag_value().ok_or_else(|| Error::msg("`--number` requires a value"))?
 //!                     .to_str().ok_or_else(|| Error::msg("invalid number"))?
 //!                     .parse().map_err(|e| Error::msg(e))?;
 //!             }

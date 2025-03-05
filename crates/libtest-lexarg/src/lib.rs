@@ -328,7 +328,7 @@ impl TestOptsParseState {
             }
             Arg::Long("logfile") => {
                 let path = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| Error::msg("`--logfile` requires a path"))?;
                 self.opts.logfile = Some(std::path::PathBuf::from(path));
             }
@@ -337,7 +337,7 @@ impl TestOptsParseState {
             }
             Arg::Long("test-threads") => {
                 let test_threads = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| Error::msg("`--test-threads` requires a positive integer"))?
                     .to_str()
                     .ok_or_else(|| Error::msg("unsupported value"))?;
@@ -350,7 +350,7 @@ impl TestOptsParseState {
             }
             Arg::Long("skip") => {
                 let filter = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| Error::msg("`--skip` requires a value"))?
                     .to_str()
                     .ok_or_else(|| Error::msg("unsupported value"))?;
@@ -361,7 +361,7 @@ impl TestOptsParseState {
             }
             Arg::Long("color") => {
                 let color = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| {
                         Error::msg("`--color` requires one of `auto`, `always`, or `never`")
                     })?
@@ -383,7 +383,7 @@ impl TestOptsParseState {
             Arg::Long("format") => {
                 self.quiet = false;
                 let format = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| {
                         Error::msg(
                             "`--format` requires one of `pretty`, `terse`, `json`, or `junit`",
@@ -408,7 +408,7 @@ impl TestOptsParseState {
             }
             Arg::Short('Z') => {
                 let feature = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| Error::msg("`-Z` requires a feature name"))?
                     .to_str()
                     .ok_or_else(|| Error::msg("unsupported value"))?;
@@ -440,7 +440,7 @@ impl TestOptsParseState {
             }
             Arg::Long("shuffle-seed") => {
                 let seed = parser
-                    .flag_value()
+                    .next_flag_value()
                     .ok_or_else(|| Error::msg("`--shuffle-seed` requires a value"))?
                     .to_str()
                     .ok_or_else(|| Error::msg("unsupported value"))?

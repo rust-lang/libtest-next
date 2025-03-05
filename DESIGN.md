@@ -116,7 +116,7 @@ Potential design directions
 meeting future needs because parsing control is handed to the plugin.
 
 This comes at the cost of:
-- Requires everyone plugin to cooperate
+- Requires every plugin to cooperate
 - More manual help construction
 
 ### Decision: iteraton model

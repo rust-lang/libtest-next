@@ -19,7 +19,7 @@
 //!     let mut shout = false;
 //!     let mut raw = std::env::args_os().collect::<Vec<_>>();
 //!     let mut parser = lexarg::Parser::new(&raw);
-//!     parser.bin();
+//!     let _bin_name = parser.next_raw();
 //!     while let Some(arg) = parser.next_arg() {
 //!         match arg {
 //!             Short('n') | Long("number") => {
@@ -108,16 +108,6 @@ impl<'a> Parser<'a> {
             state: None,
             was_attached: false,
         }
-    }
-
-    /// Extract the binary name before parsing [`Arg`]s
-    ///
-    /// # Panic
-    ///
-    /// Will panic if `next` has been called
-    pub fn bin(&mut self) -> Option<&'a OsStr> {
-        assert_eq!(self.current, 0);
-        self.next_raw_()
     }
 
     /// Get the next option or positional [`Arg`].

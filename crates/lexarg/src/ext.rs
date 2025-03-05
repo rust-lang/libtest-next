@@ -2,13 +2,14 @@ use std::ffi::OsStr;
 
 pub(crate) trait OsStrExt: private::Sealed {
     /// Converts to a string slice.
-    /// The Utf8Error is guaranteed to have a valid UTF8 boundary
+    /// The `Utf8Error` is guaranteed to have a valid UTF8 boundary
     /// in its `valid_up_to()`
     fn try_str(&self) -> Result<&str, std::str::Utf8Error>;
     /// Returns `true` if the given pattern matches a sub-slice of
     /// this string slice.
     ///
     /// Returns `false` if it does not.
+    #[allow(dead_code)]
     fn contains(&self, needle: &str) -> bool;
     /// Returns the byte index of the first character of this string slice that
     /// matches the pattern.
@@ -29,6 +30,7 @@ pub(crate) trait OsStrExt: private::Sealed {
     fn starts_with(&self, prefix: &str) -> bool;
     /// An iterator over substrings of this string slice, separated by
     /// characters matched by a pattern.
+    #[allow(dead_code)]
     fn split<'s, 'n>(&'s self, needle: &'n str) -> Split<'s, 'n>;
     /// Splits the string on the first occurrence of the specified delimiter and
     /// returns prefix before delimiter and suffix after delimiter.
@@ -92,17 +94,18 @@ impl OsStrExt for OsStr {
 }
 
 mod private {
-    pub trait Sealed {}
+    pub(crate) trait Sealed {}
 
     impl Sealed for std::ffi::OsStr {}
 }
 
-pub struct Split<'s, 'n> {
+#[allow(dead_code)]
+pub(crate) struct Split<'s, 'n> {
     haystack: Option<&'s OsStr>,
     needle: &'n str,
 }
 
-impl<'s, 'n> Iterator for Split<'s, 'n> {
+impl<'s> Iterator for Split<'s, '_> {
     type Item = &'s OsStr;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -129,10 +132,12 @@ impl<'s, 'n> Iterator for Split<'s, 'n> {
 ///
 /// `index` must be at a valid UTF-8 boundary
 pub(crate) unsafe fn split_at(os: &OsStr, index: usize) -> (&OsStr, &OsStr) {
-    let bytes = os.as_encoded_bytes();
-    let (first, second) = bytes.split_at(index);
-    (
-        OsStr::from_encoded_bytes_unchecked(first),
-        OsStr::from_encoded_bytes_unchecked(second),
-    )
+    unsafe {
+        let bytes = os.as_encoded_bytes();
+        let (first, second) = bytes.split_at(index);
+        (
+            OsStr::from_encoded_bytes_unchecked(first),
+            OsStr::from_encoded_bytes_unchecked(second),
+        )
+    }
 }

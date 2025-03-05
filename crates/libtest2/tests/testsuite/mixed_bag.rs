@@ -108,7 +108,7 @@ failures:
 test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -155,7 +155,7 @@ failures:
 test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -202,7 +202,7 @@ failures:
 test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -234,7 +234,7 @@ owl: test
 8 tests
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -309,7 +309,7 @@ running 2 tests
 test result: ok. 1 passed; 0 failed; 1 ignored; 6 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -383,7 +383,7 @@ failures:
 test result: FAILED. 2 passed; 2 failed; 0 ignored; 4 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -434,7 +434,7 @@ failures:
 test result: FAILED. 2 passed; 2 failed; 0 ignored; 4 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -505,7 +505,7 @@ failures:
 test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -576,7 +576,7 @@ failures:
 test result: FAILED. 4 passed; 4 failed; 0 ignored; 0 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -617,7 +617,7 @@ failures:
 test result: FAILED. 1 passed; 1 failed; 0 ignored; 6 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -648,7 +648,7 @@ fn list_json() {
 {"event":"discover-case","name":"owl","mode":"test","run":false}
 {"event":"discover-complete","elapsed_s":"[..]","seed":null}
 "#,
-    )
+    );
 }
 
 #[test]
@@ -691,7 +691,7 @@ fn test_json() {
 [..]
 {"event":"suite-complete","elapsed_s":"[..]"}
 "#,
-    )
+    );
 }
 
 #[test]
@@ -712,7 +712,7 @@ cat: test
 2 tests
 
 "#,
-    )
+    );
 }
 
 #[test]
@@ -739,7 +739,7 @@ fn test_junit() {
 </testsuite>
 </testsuites>
 "#,
-    )
+    );
 }
 
 #[test]
@@ -777,7 +777,7 @@ failures:
 test result: FAILED. 2 passed; 1 failed; 5 ignored; 0 filtered out; finished in [..]s
 
 "#,
-    )
+    );
 }
 
 #[test]

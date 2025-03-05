@@ -59,8 +59,8 @@ impl Summary {
             // Print messages of all tests
             for (name, msg) in &self.failures {
                 if let Some(msg) = msg {
-                    writeln!(writer, "---- {} ----", name)?;
-                    writeln!(writer, "{}", msg)?;
+                    writeln!(writer, "---- {name} ----")?;
+                    writeln!(writer, "{msg}")?;
                     writeln!(writer)?;
                 }
             }
@@ -69,7 +69,7 @@ impl Summary {
             writeln!(writer)?;
             writeln!(writer, "failures:")?;
             for name in self.failures.keys() {
-                writeln!(writer, "    {}", name)?;
+                writeln!(writer, "    {name}")?;
             }
         }
         writeln!(writer)?;

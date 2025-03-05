@@ -1,8 +1,8 @@
-pub use crate::*;
+pub(crate) use crate::*;
 
 #[derive(Debug)]
 pub struct State {
-    mode: notify::RunMode,
+    mode: RunMode,
     run_ignored: bool,
 }
 
@@ -23,7 +23,7 @@ impl State {
         }
     }
 
-    pub fn current_mode(&self) -> notify::RunMode {
+    pub fn current_mode(&self) -> RunMode {
         self.mode
     }
 }
@@ -36,7 +36,7 @@ impl State {
         }
     }
 
-    pub(crate) fn set_mode(&mut self, mode: notify::RunMode) {
+    pub(crate) fn set_mode(&mut self, mode: RunMode) {
         self.mode = mode;
     }
 

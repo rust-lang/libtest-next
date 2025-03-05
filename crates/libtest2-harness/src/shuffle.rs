@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::Case;
 
-pub fn get_shuffle_seed(opts: &libtest_lexarg::TestOpts) -> Option<u64> {
+pub(crate) fn get_shuffle_seed(opts: &libtest_lexarg::TestOpts) -> Option<u64> {
     opts.shuffle_seed.or_else(|| {
         opts.shuffle.then(|| {
             SystemTime::now()
@@ -15,7 +15,7 @@ pub fn get_shuffle_seed(opts: &libtest_lexarg::TestOpts) -> Option<u64> {
     })
 }
 
-pub fn shuffle_tests(shuffle_seed: u64, tests: &mut [Box<dyn Case>]) {
+pub(crate) fn shuffle_tests(shuffle_seed: u64, tests: &mut [Box<dyn Case>]) {
     let test_names: Vec<&str> = tests.iter().map(|test| test.name()).collect();
     let test_names_hash = calculate_hash(&test_names);
     let mut rng = Rng::new(shuffle_seed, test_names_hash);

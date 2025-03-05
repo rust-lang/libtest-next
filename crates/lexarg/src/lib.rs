@@ -120,12 +120,9 @@ impl<'a> Parser<'a> {
         self.next_raw()
     }
 
-    /// Get the next option or positional argument.
+    /// Get the next option or positional [`Arg`].
     ///
-    /// A return value of `Ok(None)` means the command line has been exhausted.
-    ///
-    /// Options that are not valid unicode are transformed with replacement
-    /// characters as by [`String::from_utf8_lossy`].
+    /// A return value of `None` means the command line has been exhausted.
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<Arg<'a>> {
         // Always reset
@@ -139,7 +136,7 @@ impl<'a> Parser<'a> {
                 Some(Arg::Unexpected(attached))
             }
             Some(State::PendingShorts(valid, invalid, index)) => {
-                // We're somewhere inside a -abc chain. Because we're in .next(), not .flag_value(), we
+                // We're somewhere inside a `-abc` chain. Because we're in `.next()`, not `.flag_value()`, we
                 // can assume that the next character is another option.
                 let unparsed = &valid[index..];
                 let mut char_indices = unparsed.char_indices();
@@ -406,14 +403,14 @@ where
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum State<'a> {
-    /// We have a value left over from --option=value.
+    /// We have a value left over from `--option=value`
     PendingValue(&'a OsStr),
-    /// We're in the middle of -abc.
+    /// We're in the middle of `-abc`
     ///
     /// On Windows and other non-UTF8-OsString platforms this Vec should
     /// only ever contain valid UTF-8 (and could instead be a String).
     PendingShorts(&'a str, &'a OsStr, usize),
-    /// We saw -- and know no more options are coming.
+    /// We saw `--` and know no more options are coming.
     Escaped,
 }
 
@@ -427,14 +424,16 @@ impl State<'_> {
     }
 }
 
-/// A command line argument found by [`Parser`], either an option or a positional argument.
+/// A command line argument found by [`Parser`], either an option or a positional argument
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arg<'a> {
-    /// A short option, e.g. `Short('q')` for `-q`.
+    /// A short option, e.g. `Short('q')` for `-q`
     Short(char),
-    /// A long option, e.g. `Long("verbose")` for `--verbose`. (The dashes are not included.)
+    /// A long option, e.g. `Long("verbose")` for `--verbose`
+    ///
+    /// The dashes are not included
     Long(&'a str),
-    /// A positional argument, e.g. `/dev/null`.
+    /// A positional argument, e.g. `/dev/null`
     Value(&'a OsStr),
     /// Marks the following values have been escaped with `--`
     Escape,

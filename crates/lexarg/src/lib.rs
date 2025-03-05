@@ -259,7 +259,7 @@ impl<'a> Parser<'a> {
         }
 
         if !self.was_attached {
-            return self.next_value();
+            return self.next_detached_value();
         }
 
         None
@@ -295,7 +295,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn next_value(&mut self) -> Option<&'a OsStr> {
+    fn next_detached_value(&mut self) -> Option<&'a OsStr> {
         if self.state == Some(State::Escaped) {
             // Escaped values are positional-only
             return None;

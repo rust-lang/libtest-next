@@ -253,16 +253,14 @@ impl<'a> Parser<'a> {
     /// - `--` was encountered, meaning all remaining arguments are positional
     /// - Being called again when the first value was attached (e.g. `--hello=world`)
     pub fn flag_value(&mut self) -> Option<&'a OsStr> {
-        if let Some(value) = self.next_attached_value() {
+        if self.was_attached {
+            None
+        } else if let Some(value) = self.next_attached_value() {
             self.was_attached = true;
-            return Some(value);
+            Some(value)
+        } else {
+            self.next_detached_value()
         }
-
-        if !self.was_attached {
-            return self.next_detached_value();
-        }
-
-        None
     }
 
     fn next_attached_value(&mut self) -> Option<&'a OsStr> {

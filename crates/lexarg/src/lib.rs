@@ -117,7 +117,7 @@ impl<'a> Parser<'a> {
     /// Will panic if `next` has been called
     pub fn bin(&mut self) -> Option<&'a OsStr> {
         assert_eq!(self.current, 0);
-        self.next_raw()
+        self.next_raw_()
     }
 
     /// Get the next option or positional [`Arg`].
@@ -195,7 +195,7 @@ impl<'a> Parser<'a> {
             }
             Some(State::Escaped) => {
                 self.state = Some(State::Escaped);
-                self.next_raw().map(Arg::Value)
+                self.next_raw_().map(Arg::Value)
             }
             None => {
                 let arg = self.raw.get(self.current)?;
@@ -256,6 +256,7 @@ impl<'a> Parser<'a> {
     /// - Being called again when the first value was attached (e.g. `--hello=world`)
     pub fn next_flag_value(&mut self) -> Option<&'a OsStr> {
         if self.was_attached {
+            debug_assert!(!self.has_pending());
             None
         } else if let Some(value) = self.next_attached_value() {
             self.was_attached = true;
@@ -301,7 +302,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let next = self.next_raw()?;
+        let next = self.next_raw_()?;
 
         if next == "--" {
             self.state = Some(State::Escaped);
@@ -311,13 +312,15 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn next_raw(&mut self) -> Option<&'a OsStr> {
+    fn next_raw_(&mut self) -> Option<&'a OsStr> {
+        debug_assert!(!self.has_pending());
+        debug_assert!(!self.was_attached);
+
         let next = self.raw.get(self.current)?;
         self.current += 1;
         Some(next)
     }
 
-    #[cfg(test)]
     fn has_pending(&self) -> bool {
         self.state.as_ref().map(State::has_pending).unwrap_or(false)
     }
@@ -414,7 +417,6 @@ enum State<'a> {
 }
 
 impl State<'_> {
-    #[cfg(test)]
     fn has_pending(&self) -> bool {
         match self {
             Self::PendingValue(_) | Self::PendingShorts(_, _, _) => true,

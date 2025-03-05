@@ -65,7 +65,14 @@
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![warn(missing_docs, missing_debug_implementations, elided_lifetimes_in_paths)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
+#![warn(clippy::print_stderr)]
+#![warn(clippy::print_stdout)]
+
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
 
 mod ext;
 

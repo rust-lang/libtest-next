@@ -312,6 +312,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Get the next argument, independent of what it looks like
+    ///
+    /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
+    #[allow(clippy::result_unit_err)]
+    pub fn next_raw(&mut self) -> Result<Option<&'a OsStr>, ()> {
+        if self.has_pending() {
+            Err(())
+        } else {
+            self.was_attached = false;
+            Ok(self.next_raw_())
+        }
+    }
+
     fn next_raw_(&mut self) -> Option<&'a OsStr> {
         debug_assert!(!self.has_pending());
         debug_assert!(!self.was_attached);

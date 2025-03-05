@@ -417,7 +417,7 @@ enum State<'a> {
     Escaped,
 }
 
-impl<'a> State<'a> {
+impl State<'_> {
     #[cfg(test)]
     fn has_pending(&self) -> bool {
         match self {
@@ -455,7 +455,7 @@ fn split_nonutf8_once(b: &OsStr) -> (&str, Option<&OsStr>) {
 }
 
 mod private {
-    use super::*;
+    use super::OsStr;
 
     pub trait Sealed {}
     impl<const C: usize, S> Sealed for [S; C] where S: AsRef<OsStr> + std::fmt::Debug {}
@@ -784,7 +784,7 @@ mod tests {
             }
             permutations = new;
             for permutation in &permutations {
-                println!("Starting {:?}", permutation);
+                println!("Starting {permutation:?}");
                 let p = Parser::new(permutation);
                 exhaust(p, vec![]);
             }
@@ -794,7 +794,7 @@ mod tests {
     /// Run many sequences of methods on a Parser.
     fn exhaust(parser: Parser<'_>, path: Vec<String>) {
         if path.len() > 100 {
-            panic!("Stuck in loop: {:?}", path);
+            panic!("Stuck in loop: {path:?}");
         }
 
         if parser.has_pending() {
@@ -806,7 +806,7 @@ mod tests {
                     "{next:?} via {path:?}",
                 );
                 let mut path = path.clone();
-                path.push(format!("pending-next-{:?}", next));
+                path.push(format!("pending-next-{next:?}"));
                 exhaust(parser, path);
             }
 
@@ -815,7 +815,7 @@ mod tests {
                 let next = parser.flag_value();
                 assert!(next.is_some(), "{next:?} via {path:?}",);
                 let mut path = path;
-                path.push(format!("pending-value-{:?}", next));
+                path.push(format!("pending-value-{next:?}"));
                 exhaust(parser, path);
             }
         } else {
@@ -832,8 +832,8 @@ mod tests {
                     }
                     _ => {
                         let mut path = path.clone();
-                        path.push(format!("next-{:?}", next));
-                        exhaust(parser, path)
+                        path.push(format!("next-{next:?}"));
+                        exhaust(parser, path);
                     }
                 }
             }
@@ -857,7 +857,7 @@ mod tests {
                             "{next:?} via {path:?}",
                         );
                         let mut path = path;
-                        path.push(format!("value-{:?}", next));
+                        path.push(format!("value-{next:?}"));
                         exhaust(parser, path);
                     }
                 }

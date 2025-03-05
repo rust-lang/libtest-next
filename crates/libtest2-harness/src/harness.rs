@@ -1,6 +1,6 @@
 use libtest_lexarg::OutputFormat;
 
-use crate::*;
+use crate::{cli, notify, shuffle, Case, RunError, RunMode, State};
 
 pub struct Harness {
     raw: Vec<std::ffi::OsString>,
@@ -33,7 +33,7 @@ impl Harness {
     pub fn main(mut self) -> ! {
         let mut parser = cli::Parser::new(&self.raw);
         let opts = parse(&mut parser).unwrap_or_else(|err| {
-            eprintln!("{}", err);
+            eprintln!("{err}");
             std::process::exit(1)
         });
 
@@ -45,11 +45,11 @@ impl Harness {
         .write_global();
 
         let mut notifier = notifier(&opts).unwrap_or_else(|err| {
-            eprintln!("{}", err);
+            eprintln!("{err}");
             std::process::exit(1)
         });
         discover(&opts, &mut self.cases, notifier.as_mut()).unwrap_or_else(|err| {
-            eprintln!("{}", err);
+            eprintln!("{err}");
             std::process::exit(1)
         });
 
@@ -70,7 +70,7 @@ impl Harness {
 
 const ERROR_EXIT_CODE: i32 = 101;
 
-fn parse(parser: &mut cli::Parser) -> cli::Result<libtest_lexarg::TestOpts> {
+fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> {
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
 
     let bin = parser.bin();
@@ -194,7 +194,7 @@ fn discover(
         retain_cases.push(retain_case);
         notifier.notify(notify::Event::DiscoverCase {
             name: case.name().to_owned(),
-            mode: notify::RunMode::Test,
+            mode: RunMode::Test,
             run: retain_case,
         })?;
     }
@@ -253,8 +253,8 @@ fn run(
                 "`--test` and `-bench` are mutually exclusive",
             ));
         }
-        (true, false) => notify::RunMode::Test,
-        (false, true) => notify::RunMode::Bench,
+        (true, false) => RunMode::Test,
+        (false, true) => RunMode::Bench,
         (false, false) => unreachable!("libtest-lexarg` should always ensure at least one is set"),
     };
     state.set_mode(mode);
@@ -309,7 +309,7 @@ fn run(
                 let case = remaining.pop_front().unwrap();
                 let name = case.name().to_owned();
 
-                let cfg = std::thread::Builder::new().name(name.to_owned());
+                let cfg = std::thread::Builder::new().name(name.clone());
                 let tx = tx.clone();
                 let case = std::sync::Arc::new(case);
                 let case_fallback = case.clone();
@@ -402,7 +402,7 @@ fn run_case(
 
         let msg = match payload {
             Some(payload) => format!("test panicked: {payload}"),
-            None => "test panicked".to_string(),
+            None => "test panicked".to_owned(),
         };
         Err(RunError::fail(msg))
     });
@@ -412,7 +412,7 @@ fn run_case(
     let message = err.and_then(|e| e.cause().map(|c| c.to_string()));
     notifier.notify(notify::Event::CaseComplete {
         name: case.name().to_owned(),
-        mode: notify::RunMode::Test,
+        mode: RunMode::Test,
         status,
         message,
         elapsed_s: Some(notify::Elapsed(timer.elapsed())),

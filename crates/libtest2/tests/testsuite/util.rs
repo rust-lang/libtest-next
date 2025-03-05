@@ -70,7 +70,7 @@ fn tempdir() -> std::path::PathBuf {
 }
 
 mod tests {
-    pub fn compile_test(
+    pub(super) fn compile_test(
         manifest_path: &std::path::Path,
         target_name: &str,
         args: impl IntoIterator<Item = impl AsRef<std::ffi::OsStr>>,
@@ -93,12 +93,12 @@ mod tests {
             }
         }
 
-        panic!("Unknown error building test {}", target_name)
+        panic!("Unknown error building test {target_name}")
     }
 
     #[allow(clippy::type_complexity)]
     fn decode_test_message<'m>(
-        message: &'m escargot::format::Message,
+        message: &'m escargot::format::Message<'_>,
     ) -> Option<(&'m str, std::path::PathBuf)> {
         match message {
             escargot::format::Message::CompilerMessage(msg) => {
@@ -133,7 +133,7 @@ mod tests {
         }
     }
 
-    fn is_test_target(target: &escargot::format::Target) -> bool {
+    fn is_test_target(target: &escargot::format::Target<'_>) -> bool {
         target.crate_types == ["bin"] && target.kind == ["test"]
     }
 }

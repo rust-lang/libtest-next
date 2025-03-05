@@ -1,4 +1,4 @@
-pub use crate::*;
+pub(crate) use crate::*;
 
 pub trait Case: Send + Sync + 'static {
     /// The name of a test

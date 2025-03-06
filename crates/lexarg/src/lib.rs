@@ -264,10 +264,7 @@ impl<'a> Parser<'a> {
                     Some(remainder)
                 }
             }
-            State::Escaped => {
-                self.state = Some(State::Escaped);
-                None
-            }
+            State::Escaped => None,
         }
     }
 

@@ -4,6 +4,7 @@
 //! further so it can be used for CLI plugin systems.
 //!
 //! ## Example
+//!
 //! ```no_run
 //! struct Args {
 //!     thing: String,
@@ -115,6 +116,10 @@ impl<'a> Parser<'a> {
     /// Returns `None` if the command line has been exhausted.
     ///
     /// Returns [`Arg::Unexpected`] on failure
+    ///
+    /// Notes:
+    /// - `=` is always accepted as a [`Arg::Short('=')`].  If that isn't the case in your
+    ///   application, you may want to special case the error for that.
     pub fn next_arg(&mut self) -> Option<Arg<'a>> {
         // Always reset
         self.was_attached = false;
@@ -132,40 +137,20 @@ impl<'a> Parser<'a> {
                 let unparsed = &valid[index..];
                 let mut char_indices = unparsed.char_indices();
                 if let Some((0, short)) = char_indices.next() {
-                    if short == '=' {
-                        let arg = self
-                            .raw
-                            .get(self.current)
-                            .expect("`current` is valid if state is `Shorts`");
-                        // SAFETY: everything preceding `index` were a short flags, making them valid UTF-8
-                        let unexpected_index = if index == 1 {
-                            0
-                        } else if short == '=' {
-                            index + 1
-                        } else {
-                            index
-                        };
-                        let unexpected = unsafe { ext::split_at(arg, unexpected_index) }.1;
-
-                        self.state = None;
-                        self.current += 1;
-                        Some(Arg::Unexpected(unexpected))
+                    if let Some((offset, _)) = char_indices.next() {
+                        let next_index = index + offset;
+                        // Might have more flags
+                        self.state = Some(State::PendingShorts(valid, invalid, next_index));
                     } else {
-                        if let Some((offset, _)) = char_indices.next() {
-                            let next_index = index + offset;
-                            // Might have more flags
-                            self.state = Some(State::PendingShorts(valid, invalid, next_index));
+                        // No more flags
+                        if invalid.is_empty() {
+                            self.state = None;
+                            self.current += 1;
                         } else {
-                            // No more flags
-                            if invalid.is_empty() {
-                                self.state = None;
-                                self.current += 1;
-                            } else {
-                                self.state = Some(State::PendingValue(invalid));
-                            }
+                            self.state = Some(State::PendingValue(invalid));
                         }
-                        Some(Arg::Short(short))
                     }
+                    Some(Arg::Short(short))
                 } else {
                     debug_assert_ne!(invalid, "");
                     if index == 1 {
@@ -243,7 +228,7 @@ impl<'a> Parser<'a> {
     /// `None` is returned if there is not another applicable flag value, including:
     /// - No more arguments are present
     /// - `--` was encountered, meaning all remaining arguments are positional
-    /// - Being called again when the first value was attached (e.g. `--hello=world`)
+    /// - Being called again when the first value was attached (`--flag=value`, `-Fvalue`, `-F=value`)
     pub fn next_flag_value(&mut self) -> Option<&'a OsStr> {
         if self.was_attached {
             debug_assert!(!self.has_pending());
@@ -671,7 +656,8 @@ mod tests {
 
         let mut p = Parser::new(&["-a=b"]);
         assert_eq!(p.next_arg().unwrap(), Short('a'));
-        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("b")));
+        assert_eq!(p.next_arg().unwrap(), Short('='));
+        assert_eq!(p.next_arg().unwrap(), Short('b'));
         assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-a="]);
@@ -681,15 +667,16 @@ mod tests {
 
         let mut p = Parser::new(&["-a="]);
         assert_eq!(p.next_arg().unwrap(), Short('a'));
-        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("")));
+        assert_eq!(p.next_arg().unwrap(), Short('='));
         assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-="]);
-        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("-=")));
+        assert_eq!(p.next_arg().unwrap(), Short('='));
         assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-=a"]);
-        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("-=a")));
+        assert_eq!(p.next_arg().unwrap(), Short('='));
+        assert_eq!(p.next_arg().unwrap(), Short('a'));
         assert_eq!(p.next_arg(), None);
     }
 
@@ -705,6 +692,7 @@ mod tests {
 
         let mut p = Parser::new(&args);
         assert_eq!(p.next_arg().unwrap(), Short('a'));
+        assert_eq!(p.next_arg().unwrap(), Short('='));
         assert_eq!(p.next_arg().unwrap(), Unexpected(&bad));
         assert_eq!(p.next_arg(), None);
     }

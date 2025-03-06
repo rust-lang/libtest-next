@@ -260,7 +260,7 @@ impl<'a> Parser<'a> {
                 } else {
                     // SAFETY: everything preceding `index` were a short flags, making them valid UTF-8
                     let remainder = unsafe { ext::split_at(arg, index) }.1;
-                    let remainder = remainder.split_once("=").map(|s| s.1).unwrap_or(remainder);
+                    let remainder = remainder.strip_prefix("=").unwrap_or(remainder);
                     Some(remainder)
                 }
             }
@@ -671,7 +671,7 @@ mod tests {
 
         let mut p = Parser::new(&["-abc=de"]);
         assert_eq!(p.next_arg().unwrap(), Short('a'));
-        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("de"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("bc=de"));
         assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-abc==de"]);

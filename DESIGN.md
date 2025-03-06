@@ -132,5 +132,6 @@ this makes delegating to plugins in a cooperative way more challenging.
 
 In reviewing lexopt's API:
 - Error handling is included in the API in a way that might make evolution difficult
+- Escapes aren't explicitly communicated which makes communal parsing more difficult
 
 TODO: there were other points that felt off to me about lexopt's API wrt API stability but I do not recall what they are

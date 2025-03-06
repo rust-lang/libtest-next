@@ -277,13 +277,10 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        let next = self.next_raw_()?;
-
-        if next == "--" {
-            self.state = Some(State::Escaped);
+        if self.peek_raw()? == "--" {
             None
         } else {
-            Some(next)
+            self.next_raw_()
         }
     }
 
@@ -298,6 +295,10 @@ impl<'a> Parser<'a> {
             self.was_attached = false;
             Ok(self.next_raw_())
         }
+    }
+
+    fn peek_raw(&self) -> Option<&'a OsStr> {
+        self.raw.get(self.current)
     }
 
     fn next_raw_(&mut self) -> Option<&'a OsStr> {
@@ -510,6 +511,7 @@ mod tests {
         let mut p = Parser::new(&["-x", "--", "-y"]);
         assert_eq!(p.next_arg().unwrap(), Short('x'));
         assert_eq!(p.next_flag_value(), None);
+        assert_eq!(p.next_arg().unwrap(), Escape);
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-y")));
         assert_eq!(p.next_arg(), None);
 
@@ -839,7 +841,10 @@ mod tests {
                             matches!(parser.state, None | Some(State::Escaped)),
                             "{next:?} via {path:?}",
                         );
-                        if parser.state.is_none() && !parser.was_attached {
+                        if parser.state.is_none()
+                            && !parser.was_attached
+                            && parser.peek_raw() != Some(OsStr::new("--"))
+                        {
                             assert_eq!(parser.current, parser.raw.len(), "{next:?} via {path:?}",);
                         }
                     }

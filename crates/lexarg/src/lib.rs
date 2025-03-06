@@ -132,7 +132,7 @@ impl<'a> Parser<'a> {
                 let unparsed = &valid[index..];
                 let mut char_indices = unparsed.char_indices();
                 if let Some((0, short)) = char_indices.next() {
-                    if matches!(short, '=' | '-') {
+                    if short == '=' {
                         let arg = self
                             .raw
                             .get(self.current)
@@ -539,7 +539,8 @@ mod tests {
         // it like an option in this position
         let mut p = Parser::new(&["-x-y"]);
         assert_eq!(p.next_arg().unwrap(), Short('x'));
-        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("-y")));
+        assert_eq!(p.next_arg().unwrap(), Short('-'));
+        assert_eq!(p.next_arg().unwrap(), Short('y'));
         assert_eq!(p.next_arg(), None);
     }
 

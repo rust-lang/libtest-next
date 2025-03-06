@@ -664,6 +664,23 @@ mod tests {
         assert_eq!(p.next_flag_value().unwrap(), OsStr::new(""));
         assert_eq!(p.next_arg(), None);
 
+        let mut p = Parser::new(&["-a=="]);
+        assert_eq!(p.next_arg().unwrap(), Short('a'));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("="));
+        assert_eq!(p.next_arg(), None);
+
+        let mut p = Parser::new(&["-abc=de"]);
+        assert_eq!(p.next_arg().unwrap(), Short('a'));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("de"));
+        assert_eq!(p.next_arg(), None);
+
+        let mut p = Parser::new(&["-abc==de"]);
+        assert_eq!(p.next_arg().unwrap(), Short('a'));
+        assert_eq!(p.next_arg().unwrap(), Short('b'));
+        assert_eq!(p.next_arg().unwrap(), Short('c'));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("=de"));
+        assert_eq!(p.next_arg(), None);
+
         let mut p = Parser::new(&["-a="]);
         assert_eq!(p.next_arg().unwrap(), Short('a'));
         assert_eq!(p.next_arg().unwrap(), Short('='));

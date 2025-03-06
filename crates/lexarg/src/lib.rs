@@ -234,7 +234,6 @@ impl<'a> Parser<'a> {
             debug_assert!(!self.has_pending());
             None
         } else if let Some(value) = self.next_attached_value() {
-            self.was_attached = true;
             Some(value)
         } else {
             self.next_detached_value()
@@ -246,6 +245,7 @@ impl<'a> Parser<'a> {
             State::PendingValue(attached) => {
                 self.state = None;
                 self.current += 1;
+                self.was_attached = true;
                 Some(attached)
             }
             State::PendingShorts(_, _, index) => {
@@ -261,6 +261,7 @@ impl<'a> Parser<'a> {
                     // SAFETY: everything preceding `index` were a short flags, making them valid UTF-8
                     let remainder = unsafe { ext::split_at(arg, index) }.1;
                     let remainder = remainder.strip_prefix("=").unwrap_or(remainder);
+                    self.was_attached = true;
                     Some(remainder)
                 }
             }

@@ -66,6 +66,7 @@
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![allow(clippy::result_unit_err)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
 #![warn(clippy::print_stderr)]
@@ -289,13 +290,24 @@ impl<'a> Parser<'a> {
     /// Get the next argument, independent of what it looks like
     ///
     /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
-    #[allow(clippy::result_unit_err)]
     pub fn next_raw(&mut self) -> Result<Option<&'a OsStr>, ()> {
         if self.has_pending() {
             Err(())
         } else {
             self.was_attached = false;
             Ok(self.next_raw_())
+        }
+    }
+
+    /// Collect all remaining arguments, independent of what they look like
+    ///
+    /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
+    pub fn remaining_raw(&mut self) -> Result<impl Iterator<Item = &'a OsStr> + '_, ()> {
+        if self.has_pending() {
+            Err(())
+        } else {
+            self.was_attached = false;
+            Ok(std::iter::from_fn(|| self.next_raw_()))
         }
     }
 
@@ -716,6 +728,29 @@ mod tests {
         assert_eq!(p.next_arg().unwrap(), Short('='));
         assert_eq!(p.next_arg().unwrap(), Unexpected(&bad));
         assert_eq!(p.next_arg(), None);
+    }
+
+    #[test]
+    fn remaining_raw() {
+        let mut p = Parser::new(&["-a", "b", "c", "d"]);
+        assert_eq!(
+            p.remaining_raw().unwrap().collect::<Vec<_>>(),
+            &["-a", "b", "c", "d"]
+        );
+        // Consumed all
+        assert!(p.next_arg().is_none());
+        assert!(p.remaining_raw().is_ok());
+        assert_eq!(p.remaining_raw().unwrap().collect::<Vec<_>>().len(), 0);
+
+        let mut p = Parser::new(&["-ab", "c", "d"]);
+        p.next_arg().unwrap();
+        // Attached value
+        assert!(p.remaining_raw().is_err());
+        p.next_attached_value().unwrap();
+        assert_eq!(p.remaining_raw().unwrap().collect::<Vec<_>>(), &["c", "d"]);
+        // Consumed all
+        assert!(p.next_arg().is_none());
+        assert_eq!(p.remaining_raw().unwrap().collect::<Vec<_>>().len(), 0);
     }
 
     /// Transform @ characters into invalid unicode.

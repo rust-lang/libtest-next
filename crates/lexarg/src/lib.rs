@@ -240,7 +240,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn next_attached_value(&mut self) -> Option<&'a OsStr> {
+    /// Get a flag's attached value (`--flag=value`, `-Fvalue`, `-F=value`)
+    ///
+    /// This is a more specialized variant of [`Parser::next_flag_value`] for when only attached
+    /// values are allowed, e.g. `--color[=<when>]`.
+    pub fn next_attached_value(&mut self) -> Option<&'a OsStr> {
         match self.state? {
             State::PendingValue(attached) => {
                 self.state = None;

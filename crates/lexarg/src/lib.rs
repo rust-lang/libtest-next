@@ -154,7 +154,10 @@ impl<'a> Parser<'a> {
                     Some(Arg::Short(short))
                 } else {
                     debug_assert_ne!(invalid, "");
-                    if index == 1 {
+                    if index == 0 {
+                        panic!("there should have been a `-`")
+                    } else if index == 1 {
+                        // Like long flags, include `-`
                         let arg = self
                             .raw
                             .get(self.current)

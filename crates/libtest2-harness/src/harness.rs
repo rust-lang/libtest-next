@@ -104,7 +104,7 @@ fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> 
                 cli::Arg::Long(v) => {
                     format!("unrecognized `--{v}` flag")
                 }
-                cli::Arg::Escape => "handled `--`".to_owned(),
+                cli::Arg::Escape(_) => "handled `--`".to_owned(),
                 cli::Arg::Value(v) => {
                     format!("unrecognized `{}` value", v.to_string_lossy())
                 }

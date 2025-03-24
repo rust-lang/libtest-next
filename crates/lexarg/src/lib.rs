@@ -176,7 +176,7 @@ impl<'a> Parser<'a> {
                 if arg == "--" {
                     self.state = Some(State::Escaped);
                     self.current += 1;
-                    Some(Arg::Escape)
+                    Some(Arg::Escape(arg.to_str().expect("`--` is valid UTF-8")))
                 } else if arg == "-" {
                     self.state = None;
                     self.current += 1;
@@ -438,7 +438,7 @@ pub enum Arg<'a> {
     /// A positional argument, e.g. `/dev/null`
     Value(&'a OsStr),
     /// Marks the following values have been escaped with `--`
-    Escape,
+    Escape(&'a str),
     /// User passed something in that doesn't work
     Unexpected(&'a OsStr),
 }
@@ -480,7 +480,7 @@ mod tests {
         assert_eq!(p.next_flag_value().unwrap(), "10");
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("foo")));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
-        assert_eq!(p.next_arg().unwrap(), Escape);
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("baz")));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-qux")));
         assert_eq!(p.next_arg(), None);
@@ -519,7 +519,7 @@ mod tests {
         // "--" should indicate the end of the options
         let mut p = Parser::new(&["-x", "--", "-y"]);
         assert_eq!(p.next_arg().unwrap(), Short("x"));
-        assert_eq!(p.next_arg().unwrap(), Escape);
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-y")));
         assert_eq!(p.next_arg(), None);
 
@@ -527,7 +527,7 @@ mod tests {
         let mut p = Parser::new(&["-x", "--", "-y"]);
         assert_eq!(p.next_arg().unwrap(), Short("x"));
         assert_eq!(p.next_flag_value(), None);
-        assert_eq!(p.next_arg().unwrap(), Escape);
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-y")));
         assert_eq!(p.next_arg(), None);
 
@@ -571,7 +571,7 @@ mod tests {
         assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("--=3")));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
         assert_eq!(p.next_arg().unwrap(), Short("x"));
-        assert_eq!(p.next_arg().unwrap(), Escape);
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-x")));
         assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("--")));

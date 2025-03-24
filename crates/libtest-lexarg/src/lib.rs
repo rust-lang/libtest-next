@@ -376,7 +376,7 @@ impl TestOptsParseState {
                     }
                 };
             }
-            Arg::Short('q') | Arg::Long("quiet") => {
+            Arg::Short("q") | Arg::Long("quiet") => {
                 self.format = None;
                 self.quiet = true;
             }
@@ -406,7 +406,7 @@ impl TestOptsParseState {
             Arg::Long("show-output") => {
                 self.opts.options.display_output = true;
             }
-            Arg::Short('Z') => {
+            Arg::Short("Z") => {
                 let feature = parser
                     .next_flag_value()
                     .ok_or_else(|| Error::msg("`-Z` requires a feature name"))?

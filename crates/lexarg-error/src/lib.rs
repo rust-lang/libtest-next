@@ -25,7 +25,7 @@
 //!     let _bin_name = parser.next_raw();
 //!     while let Some(arg) = parser.next_arg() {
 //!         match arg {
-//!             Short('n') | Long("number") => {
+//!             Short("n") | Long("number") => {
 //!                 number = parser
 //!                     .next_flag_value().ok_or_else(|| Error::msg("`--number` requires a value"))?
 //!                     .to_str().ok_or_else(|| Error::msg("invalid number"))?

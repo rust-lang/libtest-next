@@ -135,3 +135,15 @@ In reviewing lexopt's API:
 - Escapes aren't explicitly communicated which makes communal parsing more difficult
 
 TODO: there were other points that felt off to me about lexopt's API wrt API stability but I do not recall what they are
+
+### Decision: `Short(&str)`
+
+`lexopt` and `clap` / `clap_lex` treat shorts as a `char` which gives a level of type safety to parsing.
+However, with a minimal API, providing `&str` provides span information "for free".
+
+If someone were to make an API for pluggable lexers,
+support for multi-character shorts is something people may want to opt-in to (it has been requested of clap).
+
+Performance isn't the top priority, so remoing `&str` -> `char` conversions isn't necessarily viewed as a benefit.
+This also makes `match` need to work off of `&str` instead of `char`.
+Unsure which of those would be slower and how the different characteristics match up.

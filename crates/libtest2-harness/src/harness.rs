@@ -76,7 +76,7 @@ fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> 
     let bin = parser.next_raw().expect("first arg, no pending values");
     while let Some(arg) = parser.next_arg() {
         match arg {
-            cli::Arg::Short('h') | cli::Arg::Long("help") => {
+            cli::Arg::Short("h") | cli::Arg::Long("help") => {
                 let bin = bin
                     .unwrap_or_else(|| std::ffi::OsStr::new("test"))
                     .to_string_lossy();

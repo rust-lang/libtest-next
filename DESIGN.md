@@ -133,8 +133,10 @@ this makes delegating to plugins in a cooperative way more challenging.
 In reviewing lexopt's API:
 - Error handling is included in the API in a way that might make evolution difficult
 - Escapes aren't explicitly communicated which makes communal parsing more difficult
+- lexopt builds in specific option-value semantics
 
-TODO: there were other points that felt off to me about lexopt's API wrt API stability but I do not recall what they are
+And in general we will be putting the parser in the libtest-next's API and it will be a fundamental point of extension.
+Having complete control helps ensure the full experience is cohesive.
 
 ### Decision: `Short(&str)`
 

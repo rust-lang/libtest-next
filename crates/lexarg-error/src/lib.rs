@@ -1,4 +1,4 @@
-//! Argument error type for use with lexarg
+//! Error type for use with lexarg
 //!
 //! Inspired by [lexopt](https://crates.io/crates/lexopt), `lexarg` simplifies the formula down
 //! further so it can be used for CLI plugin systems.

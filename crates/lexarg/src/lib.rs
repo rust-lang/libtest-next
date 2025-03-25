@@ -33,7 +33,7 @@
 //!                 shout = true;
 //!             }
 //!             Value(val) if thing.is_none() => {
-//!                 thing = Some(val.to_str().ok_or("invalid number")?);
+//!                 thing = Some(val.to_str().ok_or("invalid string")?);
 //!             }
 //!             Long("help") => {
 //!                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");

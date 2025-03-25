@@ -43,7 +43,7 @@
 //!             Value(val) if thing.is_none() => {
 //!                 thing = Some(val
 //!                     .to_str()
-//!                     .ok_or_else(|| ErrorContext::msg("invalid number").unexpected(arg))?
+//!                     .ok_or_else(|| ErrorContext::msg("invalid string").unexpected(arg))?
 //!                 );
 //!             }
 //!             Long("help") => {

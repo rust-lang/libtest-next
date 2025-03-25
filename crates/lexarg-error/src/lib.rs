@@ -93,7 +93,7 @@ impl Error {
     where
         M: std::fmt::Display,
     {
-        Error {
+        Self {
             msg: message.to_string(),
         }
     }
@@ -105,7 +105,7 @@ where
 {
     #[cold]
     fn from(error: E) -> Self {
-        Error::msg(error)
+        Self::msg(error)
     }
 }
 

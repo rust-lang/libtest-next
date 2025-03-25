@@ -30,8 +30,10 @@
 //!     while let Some(arg) = parser.next_arg() {
 //!         match arg {
 //!             Short("n") | Long("number") => {
-//!                 number = parser
-//!                     .next_flag_value().ok_or_else(|| ErrorContext::msg("missing required value").within(arg))?
+//!                 let value = parser
+//!                     .next_flag_value()
+//!                     .ok_or_else(|| ErrorContext::msg("missing required value").within(arg))?;
+//!                 number = value
 //!                     .to_str().ok_or_else(|| ErrorContext::msg("invalid number").within(arg))?
 //!                     .parse().map_err(|e| ErrorContext::msg(e).within(arg))?;
 //!             }

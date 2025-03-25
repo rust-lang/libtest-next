@@ -23,33 +23,39 @@
 //!     let mut shout = false;
 //!     let mut raw = std::env::args_os().collect::<Vec<_>>();
 //!     let mut parser = lexarg::Parser::new(&raw);
-//!     let _bin_name = parser.next_raw();
+//!     let bin_name = parser
+//!         .next_raw()
+//!         .expect("nothing parsed yet so no attached lingering")
+//!         .expect("always at least one");
 //!     while let Some(arg) = parser.next_arg() {
 //!         match arg {
 //!             Short("n") | Long("number") => {
 //!                 number = parser
-//!                     .next_flag_value().ok_or_else(|| ErrorContext::msg("`--number` requires a value"))?
-//!                     .to_str().ok_or_else(|| ErrorContext::msg("invalid number"))?
-//!                     .parse().map_err(|e| ErrorContext::msg(e))?;
+//!                     .next_flag_value().ok_or_else(|| ErrorContext::msg("missing required value").within(arg))?
+//!                     .to_str().ok_or_else(|| ErrorContext::msg("invalid number").within(arg))?
+//!                     .parse().map_err(|e| ErrorContext::msg(e).within(arg))?;
 //!             }
 //!             Long("shout") => {
 //!                 shout = true;
 //!             }
 //!             Value(val) if thing.is_none() => {
-//!                 thing = Some(val.to_str().ok_or_else(|| ErrorContext::msg("invalid number"))?);
+//!                 thing = Some(val
+//!                     .to_str()
+//!                     .ok_or_else(|| ErrorContext::msg("invalid number").within(arg))?
+//!                 );
 //!             }
 //!             Long("help") => {
 //!                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
 //!                 std::process::exit(0);
 //!             }
 //!             _ => {
-//!                 return Err(Error::msg("unexpected argument"));
+//!                 return Err(ErrorContext::msg("unexpected argument").within(arg).into());
 //!             }
 //!         }
 //!     }
 //!
 //!     Ok(Args {
-//!         thing: thing.ok_or_else(|| Error::msg("missing argument THING"))?.to_owned(),
+//!         thing: thing.ok_or_else(|| ErrorContext::msg("missing argument THING").within(lexarg::Arg::Value(bin_name)))?.to_owned(),
 //!         number,
 //!         shout,
 //!     })
@@ -100,9 +106,9 @@ impl Error {
     }
 }
 
-impl From<ErrorContext> for Error {
+impl From<ErrorContext<'_>> for Error {
     #[cold]
-    fn from(error: ErrorContext) -> Self {
+    fn from(error: ErrorContext<'_>) -> Self {
         Self::msg(error.to_string())
     }
 }
@@ -115,11 +121,12 @@ impl std::fmt::Display for Error {
 
 /// Collect context for creating an [`Error`]
 #[derive(Debug)]
-pub struct ErrorContext {
+pub struct ErrorContext<'a> {
     msg: String,
+    within: Option<lexarg::Arg<'a>>,
 }
 
-impl ErrorContext {
+impl<'a> ErrorContext<'a> {
     /// Create a new error object from a printable error message.
     #[cold]
     pub fn msg<M>(message: M) -> Self
@@ -128,11 +135,19 @@ impl ErrorContext {
     {
         Self {
             msg: message.to_string(),
+            within: None,
         }
+    }
+
+    /// [`Arg`][lexarg::Arg] the error occurred within
+    #[cold]
+    pub fn within(mut self, within: lexarg::Arg<'a>) -> Self {
+        self.within = Some(within);
+        self
     }
 }
 
-impl<E> From<E> for ErrorContext
+impl<E> From<E> for ErrorContext<'_>
 where
     E: std::error::Error + Send + Sync + 'static,
 {
@@ -142,8 +157,21 @@ where
     }
 }
 
-impl std::fmt::Display for ErrorContext {
+impl std::fmt::Display for ErrorContext<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.msg.fmt(formatter)
+        self.msg.fmt(formatter)?;
+        if let Some(within) = &self.within {
+            write!(formatter, " when parsing `")?;
+            match within {
+                lexarg::Arg::Short(short) => write!(formatter, "-{short}")?,
+                lexarg::Arg::Long(long) => write!(formatter, "--{long}")?,
+                lexarg::Arg::Escape(value) => write!(formatter, "{value}")?,
+                lexarg::Arg::Value(value) | lexarg::Arg::Unexpected(value) => {
+                    write!(formatter, "{}", value.to_string_lossy())?;
+                }
+            }
+            write!(formatter, "`")?;
+        }
+        Ok(())
     }
 }

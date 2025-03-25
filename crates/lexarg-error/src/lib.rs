@@ -77,51 +77,7 @@
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
-/// `Result<T, Error>`
-///
-/// `lexarg_error::Result` may be used with one *or* two type parameters.
-///
-/// ```rust
-/// use lexarg_error::Result;
-///
-/// # const IGNORE: &str = stringify! {
-/// fn demo1() -> Result<T> {...}
-///            // ^ equivalent to std::result::Result<T, lexarg_error::Error>
-///
-/// fn demo2() -> Result<T, OtherError> {...}
-///            // ^ equivalent to std::result::Result<T, OtherError>
-/// # };
-/// ```
-///
-/// # Example
-///
-/// ```
-/// # pub trait Deserialize {}
-/// #
-/// # mod serde_json {
-/// #     use super::Deserialize;
-/// #     use std::io;
-/// #
-/// #     pub fn from_str<T: Deserialize>(json: &str) -> io::Result<T> {
-/// #         unimplemented!()
-/// #     }
-/// # }
-/// #
-/// # #[derive(Debug)]
-/// # struct ClusterMap;
-/// #
-/// # impl Deserialize for ClusterMap {}
-/// #
-/// use lexarg_error::Result;
-///
-/// fn main() -> Result<()> {
-///     # return Ok(());
-///     let config = std::fs::read_to_string("cluster.json")?;
-///     let map: ClusterMap = serde_json::from_str(&config)?;
-///     println!("cluster info: {:#?}", map);
-///     Ok(())
-/// }
-/// ```
+/// `Result` that defaults to [`Error`]
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Argument error type for use with lexarg

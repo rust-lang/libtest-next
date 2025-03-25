@@ -31,7 +31,7 @@ fn parse_args() -> Result<Args, &'static str> {
             Value(val) if thing.is_none() => {
                 thing = Some(val.to_str().ok_or("invalid string")?);
             }
-            Long("help") => {
+            Short("h") | Long("help") => {
                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
                 std::process::exit(0);
             }

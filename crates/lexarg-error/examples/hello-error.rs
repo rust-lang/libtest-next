@@ -45,7 +45,7 @@ fn parse_args() -> Result<Args> {
                         .ok_or_else(|| ErrorContext::msg("invalid string").unexpected(arg))?,
                 );
             }
-            Long("help") => {
+            Short("h") | Long("help") => {
                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
                 std::process::exit(0);
             }

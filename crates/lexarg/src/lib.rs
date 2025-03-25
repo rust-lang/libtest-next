@@ -278,7 +278,7 @@ impl<'a> Parser<'a> {
             return None;
         }
 
-        if self.peek_raw()? == "--" {
+        if self.peek_raw_()? == "--" {
             None
         } else {
             self.next_raw_()
@@ -309,7 +309,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn peek_raw(&self) -> Option<&'a OsStr> {
+    /// Get the next argument, independent of what it looks like
+    ///
+    /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
+    pub fn peek_raw(&self) -> Result<Option<&'a OsStr>, ()> {
+        if self.has_pending() {
+            Err(())
+        } else {
+            Ok(self.peek_raw_())
+        }
+    }
+
+    fn peek_raw_(&self) -> Option<&'a OsStr> {
         self.raw.get(self.current)
     }
 
@@ -899,7 +910,7 @@ mod tests {
                         );
                         if parser.state.is_none()
                             && !parser.was_attached
-                            && parser.peek_raw() != Some(OsStr::new("--"))
+                            && parser.peek_raw_() != Some(OsStr::new("--"))
                         {
                             assert_eq!(parser.current, parser.raw.len(), "{next:?} via {path:?}",);
                         }

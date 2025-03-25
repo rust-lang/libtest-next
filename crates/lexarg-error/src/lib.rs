@@ -23,7 +23,6 @@ pub struct ReadmeDoctests;
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Argument error type for use with lexarg
-#[derive(Debug)]
 pub struct Error {
     msg: String,
 }
@@ -45,6 +44,12 @@ impl From<ErrorContext<'_>> for Error {
     #[cold]
     fn from(error: ErrorContext<'_>) -> Self {
         Self::msg(error.to_string())
+    }
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.msg.fmt(formatter)
     }
 }
 

@@ -438,7 +438,7 @@ impl State<'_> {
 }
 
 /// A command line argument found by [`Parser`], either an option or a positional argument
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Arg<'a> {
     /// A short option, e.g. `Short("q")` for `-q`
     Short(&'a str),

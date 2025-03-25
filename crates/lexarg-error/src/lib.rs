@@ -34,8 +34,8 @@
 //!                     .next_flag_value()
 //!                     .ok_or_else(|| ErrorContext::msg("missing required value").within(arg))?;
 //!                 number = value
-//!                     .to_str().ok_or_else(|| ErrorContext::msg("invalid number").within(arg))?
-//!                     .parse().map_err(|e| ErrorContext::msg(e).within(arg))?;
+//!                     .to_str().ok_or_else(|| ErrorContext::msg("invalid number").unexpected(lexarg::Arg::Value(value)).within(arg))?
+//!                     .parse().map_err(|e| ErrorContext::msg(e).unexpected(lexarg::Arg::Value(value)).within(arg))?;
 //!             }
 //!             Long("shout") => {
 //!                 shout = true;
@@ -43,7 +43,7 @@
 //!             Value(val) if thing.is_none() => {
 //!                 thing = Some(val
 //!                     .to_str()
-//!                     .ok_or_else(|| ErrorContext::msg("invalid number").within(arg))?
+//!                     .ok_or_else(|| ErrorContext::msg("invalid number").unexpected(arg))?
 //!                 );
 //!             }
 //!             Long("help") => {
@@ -51,7 +51,7 @@
 //!                 std::process::exit(0);
 //!             }
 //!             _ => {
-//!                 return Err(ErrorContext::msg("unexpected argument").within(arg).into());
+//!                 return Err(ErrorContext::msg("unexpected argument").unexpected(arg).within(lexarg::Arg::Value(bin_name)).into());
 //!             }
 //!         }
 //!     }
@@ -126,6 +126,7 @@ impl std::fmt::Display for Error {
 pub struct ErrorContext<'a> {
     msg: String,
     within: Option<lexarg::Arg<'a>>,
+    unexpected: Option<lexarg::Arg<'a>>,
 }
 
 impl<'a> ErrorContext<'a> {
@@ -138,6 +139,7 @@ impl<'a> ErrorContext<'a> {
         Self {
             msg: message.to_string(),
             within: None,
+            unexpected: None,
         }
     }
 
@@ -145,6 +147,13 @@ impl<'a> ErrorContext<'a> {
     #[cold]
     pub fn within(mut self, within: lexarg::Arg<'a>) -> Self {
         self.within = Some(within);
+        self
+    }
+
+    /// The failing [`Arg`][lexarg::Arg]
+    #[cold]
+    pub fn unexpected(mut self, unexpected: lexarg::Arg<'a>) -> Self {
+        self.unexpected = Some(unexpected);
         self
     }
 }
@@ -162,6 +171,18 @@ where
 impl std::fmt::Display for ErrorContext<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.msg.fmt(formatter)?;
+        if let Some(unexpected) = &self.unexpected {
+            write!(formatter, ", found `")?;
+            match unexpected {
+                lexarg::Arg::Short(short) => write!(formatter, "-{short}")?,
+                lexarg::Arg::Long(long) => write!(formatter, "--{long}")?,
+                lexarg::Arg::Escape(value) => write!(formatter, "{value}")?,
+                lexarg::Arg::Value(value) | lexarg::Arg::Unexpected(value) => {
+                    write!(formatter, "{}", value.to_string_lossy())?;
+                }
+            }
+            write!(formatter, "`")?;
+        }
         if let Some(within) = &self.within {
             write!(formatter, " when parsing `")?;
             match within {

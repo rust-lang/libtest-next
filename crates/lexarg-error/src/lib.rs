@@ -6,6 +6,7 @@
 //! ## Example
 //! ```no_run
 //! use lexarg_error::Error;
+//! use lexarg_error::ErrorContext;
 //! use lexarg_error::Result;
 //!
 //! struct Args {
@@ -27,15 +28,15 @@
 //!         match arg {
 //!             Short("n") | Long("number") => {
 //!                 number = parser
-//!                     .next_flag_value().ok_or_else(|| Error::msg("`--number` requires a value"))?
-//!                     .to_str().ok_or_else(|| Error::msg("invalid number"))?
-//!                     .parse().map_err(|e| Error::msg(e))?;
+//!                     .next_flag_value().ok_or_else(|| ErrorContext::msg("`--number` requires a value"))?
+//!                     .to_str().ok_or_else(|| ErrorContext::msg("invalid number"))?
+//!                     .parse().map_err(|e| ErrorContext::msg(e))?;
 //!             }
 //!             Long("shout") => {
 //!                 shout = true;
 //!             }
 //!             Value(val) if thing.is_none() => {
-//!                 thing = Some(val.to_str().ok_or_else(|| Error::msg("invalid number"))?);
+//!                 thing = Some(val.to_str().ok_or_else(|| ErrorContext::msg("invalid number"))?);
 //!             }
 //!             Long("help") => {
 //!                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
@@ -99,7 +100,39 @@ impl Error {
     }
 }
 
-impl<E> From<E> for Error
+impl From<ErrorContext> for Error {
+    #[cold]
+    fn from(error: ErrorContext) -> Self {
+        Self::msg(error.to_string())
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.msg.fmt(formatter)
+    }
+}
+
+/// Collect context for creating an [`Error`]
+#[derive(Debug)]
+pub struct ErrorContext {
+    msg: String,
+}
+
+impl ErrorContext {
+    /// Create a new error object from a printable error message.
+    #[cold]
+    pub fn msg<M>(message: M) -> Self
+    where
+        M: std::fmt::Display,
+    {
+        Self {
+            msg: message.to_string(),
+        }
+    }
+}
+
+impl<E> From<E> for ErrorContext
 where
     E: std::error::Error + Send + Sync + 'static,
 {
@@ -109,7 +142,7 @@ where
     }
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for ErrorContext {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.msg.fmt(formatter)
     }

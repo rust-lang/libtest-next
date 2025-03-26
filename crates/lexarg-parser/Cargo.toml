@@ -1,7 +1,7 @@
 [package]
-name = "lexarg-error"
+name = "lexarg-parser"
 version = "0.1.0"
-description = "Argument error type for use with lexarg"
+description = "Minimal, API stable CLI parser"
 categories = ["command-line-interface"]
 keywords = ["args", "arguments", "cli", "parser", "getopt"]
 repository.workspace = true
@@ -27,7 +27,6 @@ pre-release-replacements = [
 default = []
 
 [dependencies]
-lexarg-parser = { "version" = "0.1.0", path = "../lexarg-parser" }
 
 [dev-dependencies]
 

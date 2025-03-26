@@ -9,13 +9,13 @@ struct Args {
 
 fn parse_args() -> Result<Args> {
     #![allow(clippy::enum_glob_use)]
-    use lexarg::Arg::*;
+    use lexarg_parser::Arg::*;
 
     let mut thing = None;
     let mut number = 1;
     let mut shout = false;
     let raw = std::env::args_os().collect::<Vec<_>>();
-    let mut parser = lexarg::Parser::new(&raw);
+    let mut parser = lexarg_parser::Parser::new(&raw);
     let bin_name = parser
         .next_raw()
         .expect("nothing parsed yet so no attached lingering")

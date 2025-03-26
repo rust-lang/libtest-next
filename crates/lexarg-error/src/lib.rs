@@ -63,8 +63,8 @@ impl std::fmt::Display for Error {
 #[derive(Debug)]
 pub struct ErrorContext<'a> {
     msg: String,
-    within: Option<lexarg::Arg<'a>>,
-    unexpected: Option<lexarg::Arg<'a>>,
+    within: Option<lexarg_parser::Arg<'a>>,
+    unexpected: Option<lexarg_parser::Arg<'a>>,
 }
 
 impl<'a> ErrorContext<'a> {
@@ -81,16 +81,16 @@ impl<'a> ErrorContext<'a> {
         }
     }
 
-    /// [`Arg`][lexarg::Arg] the error occurred within
+    /// [`Arg`][lexarg_parser::Arg] the error occurred within
     #[cold]
-    pub fn within(mut self, within: lexarg::Arg<'a>) -> Self {
+    pub fn within(mut self, within: lexarg_parser::Arg<'a>) -> Self {
         self.within = Some(within);
         self
     }
 
-    /// The failing [`Arg`][lexarg::Arg]
+    /// The failing [`Arg`][lexarg_parser::Arg]
     #[cold]
-    pub fn unexpected(mut self, unexpected: lexarg::Arg<'a>) -> Self {
+    pub fn unexpected(mut self, unexpected: lexarg_parser::Arg<'a>) -> Self {
         self.unexpected = Some(unexpected);
         self
     }
@@ -112,10 +112,10 @@ impl std::fmt::Display for ErrorContext<'_> {
         if let Some(unexpected) = &self.unexpected {
             write!(formatter, ", found `")?;
             match unexpected {
-                lexarg::Arg::Short(short) => write!(formatter, "-{short}")?,
-                lexarg::Arg::Long(long) => write!(formatter, "--{long}")?,
-                lexarg::Arg::Escape(value) => write!(formatter, "{value}")?,
-                lexarg::Arg::Value(value) | lexarg::Arg::Unexpected(value) => {
+                lexarg_parser::Arg::Short(short) => write!(formatter, "-{short}")?,
+                lexarg_parser::Arg::Long(long) => write!(formatter, "--{long}")?,
+                lexarg_parser::Arg::Escape(value) => write!(formatter, "{value}")?,
+                lexarg_parser::Arg::Value(value) | lexarg_parser::Arg::Unexpected(value) => {
                     write!(formatter, "{}", value.to_string_lossy())?;
                 }
             }
@@ -124,10 +124,10 @@ impl std::fmt::Display for ErrorContext<'_> {
         if let Some(within) = &self.within {
             write!(formatter, " when parsing `")?;
             match within {
-                lexarg::Arg::Short(short) => write!(formatter, "-{short}")?,
-                lexarg::Arg::Long(long) => write!(formatter, "--{long}")?,
-                lexarg::Arg::Escape(value) => write!(formatter, "{value}")?,
-                lexarg::Arg::Value(value) | lexarg::Arg::Unexpected(value) => {
+                lexarg_parser::Arg::Short(short) => write!(formatter, "-{short}")?,
+                lexarg_parser::Arg::Long(long) => write!(formatter, "--{long}")?,
+                lexarg_parser::Arg::Escape(value) => write!(formatter, "{value}")?,
+                lexarg_parser::Arg::Value(value) | lexarg_parser::Arg::Unexpected(value) => {
                     write!(formatter, "{}", value.to_string_lossy())?;
                 }
             }

@@ -137,8 +137,8 @@ version = "0.1.0"
 dependencies = [
  "anstream",
  "anstyle",
- "lexarg",
  "lexarg-error",
+ "lexarg-parser",
  "libtest-lexarg",
  "serde",
  "serde_json",

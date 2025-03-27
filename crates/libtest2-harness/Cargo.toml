@@ -32,7 +32,7 @@ threads = []
 [dependencies]
 anstream = "0.6.4"
 anstyle = "1.0.0"
-lexarg = { version = "0.1.0", path = "../lexarg" }
+lexarg-parser = { version = "0.1.0", path = "../lexarg-parser" }
 lexarg-error = { version = "0.1.0", path = "../lexarg-error" }
 libtest-lexarg = { version = "0.1.0", path = "../libtest-lexarg" }
 serde = { version = "1.0.160", features = ["derive"], optional = true }

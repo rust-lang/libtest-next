@@ -20,9 +20,47 @@
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
-pub use lexarg_error::Error;
 pub use lexarg_error::ErrorContext;
-pub use lexarg_error::Result;
 pub use lexarg_parser::Arg;
 pub use lexarg_parser::Parser;
 pub use lexarg_parser::RawArgs;
+
+/// `Result` that defaults to [`Error`]
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+/// Argument error type for use with lexarg
+pub struct Error {
+    msg: String,
+}
+
+impl Error {
+    /// Create a new error object from a printable error message.
+    #[cold]
+    pub fn msg<M>(message: M) -> Self
+    where
+        M: std::fmt::Display,
+    {
+        Self {
+            msg: message.to_string(),
+        }
+    }
+}
+
+impl From<ErrorContext<'_>> for Error {
+    #[cold]
+    fn from(error: ErrorContext<'_>) -> Self {
+        Self::msg(error.to_string())
+    }
+}
+
+impl std::fmt::Debug for Error {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.msg.fmt(formatter)
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.msg.fmt(formatter)
+    }
+}

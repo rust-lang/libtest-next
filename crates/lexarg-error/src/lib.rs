@@ -19,47 +19,7 @@
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
-/// `Result` that defaults to [`Error`]
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
-/// Argument error type for use with lexarg
-pub struct Error {
-    msg: String,
-}
-
-impl Error {
-    /// Create a new error object from a printable error message.
-    #[cold]
-    pub fn msg<M>(message: M) -> Self
-    where
-        M: std::fmt::Display,
-    {
-        Self {
-            msg: message.to_string(),
-        }
-    }
-}
-
-impl From<ErrorContext<'_>> for Error {
-    #[cold]
-    fn from(error: ErrorContext<'_>) -> Self {
-        Self::msg(error.to_string())
-    }
-}
-
-impl std::fmt::Debug for Error {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.msg.fmt(formatter)
-    }
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.msg.fmt(formatter)
-    }
-}
-
-/// Collect context for creating an [`Error`]
+/// Collect context for creating an error
 #[derive(Debug)]
 pub struct ErrorContext<'a> {
     msg: String,

@@ -23,6 +23,7 @@ pub struct ReadmeDoctests;
 /// Simplify parsing of arguments
 pub mod prelude {
     pub use crate::Arg::*;
+    pub use crate::ResultContextExt as _;
     pub use crate::ValueExt as _;
 }
 
@@ -127,5 +128,17 @@ impl<'a> ValueExt<'a> for &'a std::ffi::OsStr {
         E: std::fmt::Display,
     {
         op(self).map_err(|err| ErrorContext::msg(err).unexpected(Arg::Value(self)))
+    }
+}
+
+/// Extensions for extending [`ErrorContext`]
+pub trait ResultContextExt<'a> {
+    /// [`Arg`] the error occurred within
+    fn within(self, within: Arg<'a>) -> Self;
+}
+
+impl<'a, T> ResultContextExt<'a> for Result<T, ErrorContext<'a>> {
+    fn within(self, within: Arg<'a>) -> Self {
+        self.map_err(|err| err.within(within))
     }
 }

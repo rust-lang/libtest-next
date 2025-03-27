@@ -24,8 +24,9 @@ fn parse_args() -> Result<Args> {
             Short("n") | Long("number") => {
                 let value = parser
                     .next_flag_value()
-                    .ok_or_else(|| ErrorContext::msg("missing required value").within(arg))?;
-                number = value.parse().map_err(|e| e.within(arg))?;
+                    .ok_or_else(|| ErrorContext::msg("missing required value"))
+                    .within(arg)?;
+                number = value.parse().within(arg)?;
             }
             Long("shout") => {
                 shout = true;
@@ -48,7 +49,8 @@ fn parse_args() -> Result<Args> {
 
     Ok(Args {
         thing: thing
-            .ok_or_else(|| ErrorContext::msg("missing argument THING").within(Value(bin_name)))?
+            .ok_or_else(|| ErrorContext::msg("missing argument THING"))
+            .within(Value(bin_name))?
             .to_owned(),
         number,
         shout,

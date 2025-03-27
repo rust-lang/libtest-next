@@ -330,8 +330,10 @@ impl TestOptsParseState {
             Long("logfile") => {
                 let path = parser
                     .next_flag_value()
-                    .ok_or_else(|| ErrorContext::msg("`--logfile` requires a path"))?;
-                self.opts.logfile = Some(std::path::PathBuf::from(path));
+                    .ok_or_missing(Value(std::ffi::OsStr::new("PATH")))
+                    .path()
+                    .within(arg)?;
+                self.opts.logfile = Some(path.to_owned());
             }
             Long("nocapture") => {
                 self.opts.nocapture = true;
@@ -339,26 +341,17 @@ impl TestOptsParseState {
             Long("test-threads") => {
                 let test_threads = parser
                     .next_flag_value()
-                    .ok_or_else(|| {
-                        ErrorContext::msg("`--test-threads` requires a positive integer")
-                    })?
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
-                self.opts.test_threads = match test_threads.parse::<std::num::NonZeroUsize>() {
-                    Ok(n) => Some(n),
-                    Err(_) => {
-                        return Err(ErrorContext::msg(
-                            "`--test-threads` must be a positive integer",
-                        ));
-                    }
-                };
+                    .ok_or_missing(Value(std::ffi::OsStr::new("NUM")))
+                    .parse()
+                    .within(arg)?;
+                self.opts.test_threads = Some(test_threads);
             }
             Long("skip") => {
                 let filter = parser
                     .next_flag_value()
-                    .ok_or_else(|| ErrorContext::msg("`--skip` requires a value"))?
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
+                    .ok_or_missing(Value(std::ffi::OsStr::new("NAME")))
+                    .string("NAME")
+                    .within(arg)?;
                 self.opts.skip.push(filter.to_owned());
             }
             Long("exact") => {
@@ -367,20 +360,14 @@ impl TestOptsParseState {
             Long("color") => {
                 let color = parser
                     .next_flag_value()
-                    .ok_or_else(|| {
-                        ErrorContext::msg("`--color` requires one of `auto`, `always`, or `never`")
-                    })?
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
+                    .ok_or_missing(Value(std::ffi::OsStr::new("WHEN")))
+                    .one_of(&["auto", "always", "never"])
+                    .within(arg)?;
                 self.opts.color = match color {
                     "auto" => ColorConfig::AutoColor,
                     "always" => ColorConfig::AlwaysColor,
                     "never" => ColorConfig::NeverColor,
-                    _ => {
-                        return Err(ErrorContext::msg(
-                            "`--color` accepts `auto`, `always`, or `never`",
-                        ));
-                    }
+                    _ => unreachable!("`one_of` should prevent this"),
                 };
             }
             Short("q") | Long("quiet") => {
@@ -391,23 +378,15 @@ impl TestOptsParseState {
                 self.quiet = false;
                 let format = parser
                     .next_flag_value()
-                    .ok_or_else(|| {
-                        ErrorContext::msg(
-                            "`--format` requires one of `pretty`, `terse`, `json`, or `junit`",
-                        )
-                    })?
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
+                    .ok_or_missing(Value(std::ffi::OsStr::new("FORMAT")))
+                    .one_of(&["pretty", "terse", "json", "junit"])
+                    .within(arg)?;
                 self.format = Some(match format {
                     "pretty" => OutputFormat::Pretty,
                     "terse" => OutputFormat::Terse,
                     "json" => OutputFormat::Json,
                     "junit" => OutputFormat::Junit,
-                    _ => {
-                        return Err(ErrorContext::msg(
-                            "`--format` accepts `pretty`, `terse`, `json`, or `junit`",
-                        ));
-                    }
+                    _ => unreachable!("`one_of` should prevent this"),
                 });
             }
             Long("show-output") => {
@@ -416,13 +395,11 @@ impl TestOptsParseState {
             Short("Z") => {
                 let feature = parser
                     .next_flag_value()
-                    .ok_or_else(|| ErrorContext::msg("`-Z` requires a feature name"))?
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
+                    .ok_or_missing(Value(std::ffi::OsStr::new("FEATURE")))
+                    .string("FEATURE")
+                    .within(arg)?;
                 if !is_nightly() {
-                    return Err(ErrorContext::msg(
-                        "`-Z` is only accepted on the nightly compiler",
-                    ));
+                    return Err(ErrorContext::msg("expected nightly compiler").unexpected(arg));
                 }
                 // Don't validate `feature` as other parsers might provide values
                 self.opts.allowed_unstable.push(feature.to_owned());
@@ -450,17 +427,13 @@ impl TestOptsParseState {
             Long("shuffle-seed") => {
                 let seed = parser
                     .next_flag_value()
-                    .ok_or_else(|| ErrorContext::msg("`--shuffle-seed` requires a value"))?
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?
-                    .parse::<u64>()
-                    .map_err(ErrorContext::msg)?;
+                    .ok_or_missing(Value(std::ffi::OsStr::new("SEED")))
+                    .parse()
+                    .within(arg)?;
                 self.opts.shuffle_seed = Some(seed);
             }
             Value(filter) => {
-                let filter = filter
-                    .to_str()
-                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
+                let filter = filter.string("FILTER")?;
                 self.opts.filters.push(filter.to_owned());
             }
             _ => {

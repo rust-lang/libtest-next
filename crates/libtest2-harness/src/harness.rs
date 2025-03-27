@@ -75,13 +75,14 @@ fn parse<'p>(
 ) -> Result<libtest_lexarg::TestOpts, cli::ErrorContext<'p>> {
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
 
-    let bin = parser.next_raw().expect("first arg, no pending values");
+    let bin = parser
+        .next_raw()
+        .expect("first arg, no pending values")
+        .unwrap_or(std::ffi::OsStr::new("test"));
     while let Some(arg) = parser.next_arg() {
         match arg {
             cli::Arg::Short("h") | cli::Arg::Long("help") => {
-                let bin = bin
-                    .unwrap_or_else(|| std::ffi::OsStr::new("test"))
-                    .to_string_lossy();
+                let bin = bin.to_string_lossy();
                 let options_help = libtest_lexarg::OPTIONS_HELP.trim();
                 let after_help = libtest_lexarg::AFTER_HELP.trim();
                 println!(

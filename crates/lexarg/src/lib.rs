@@ -20,6 +20,11 @@
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
+/// Simplify parsing of arguments
+pub mod prelude {
+    pub use crate::Arg::*;
+}
+
 pub use lexarg_error::ErrorContext;
 pub use lexarg_parser::Arg;
 pub use lexarg_parser::Parser;

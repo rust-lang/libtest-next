@@ -8,8 +8,7 @@ struct Args {
 }
 
 fn parse_args() -> Result<Args> {
-    #![allow(clippy::enum_glob_use)]
-    use lexarg::Arg::*;
+    use lexarg::prelude::*;
 
     let mut thing = None;
     let mut number = 1;

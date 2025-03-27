@@ -19,6 +19,7 @@ fn parse_args() -> Result<Args> {
         .next_raw()
         .expect("nothing parsed yet so no attached lingering")
         .expect("always at least one");
+    let mut prev_arg = Value(bin_name);
     while let Some(arg) = parser.next_arg() {
         match arg {
             Short("n") | Long("number") => {
@@ -38,12 +39,19 @@ fn parse_args() -> Result<Args> {
                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
                 std::process::exit(0);
             }
+            Unexpected(_) => {
+                return Err(ErrorContext::msg("unexpected value")
+                    .unexpected(arg)
+                    .within(prev_arg)
+                    .into());
+            }
             _ => {
                 return Err(ErrorContext::msg("unexpected argument")
                     .unexpected(arg)
                     .into());
             }
         }
+        prev_arg = arg;
     }
 
     Ok(Args {

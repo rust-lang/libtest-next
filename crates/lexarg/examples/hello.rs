@@ -24,7 +24,7 @@ fn parse_args() -> Result<Args> {
             Short("n") | Long("number") => {
                 let value = parser
                     .next_flag_value()
-                    .ok_or_else(|| ErrorContext::msg("missing required value"))
+                    .ok_or_missing(Value(std::ffi::OsStr::new("NUM")))
                     .within(arg)?;
                 number = value.parse().within(arg)?;
             }
@@ -49,7 +49,7 @@ fn parse_args() -> Result<Args> {
 
     Ok(Args {
         thing: thing
-            .ok_or_else(|| ErrorContext::msg("missing argument THING"))
+            .ok_or_missing(Value(std::ffi::OsStr::new("THING")))
             .within(Value(bin_name))?
             .to_owned(),
         number,

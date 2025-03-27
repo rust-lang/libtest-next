@@ -23,6 +23,7 @@ pub struct ReadmeDoctests;
 /// Simplify parsing of arguments
 pub mod prelude {
     pub use crate::Arg::*;
+    pub use crate::OptionContextExt as _;
     pub use crate::ResultContextExt as _;
     pub use crate::ValueExt as _;
 }
@@ -140,5 +141,27 @@ pub trait ResultContextExt<'a> {
 impl<'a, T> ResultContextExt<'a> for Result<T, ErrorContext<'a>> {
     fn within(self, within: Arg<'a>) -> Self {
         self.map_err(|err| err.within(within))
+    }
+}
+
+/// Extensions for creating an [`ErrorContext`]
+pub trait OptionContextExt<T> {
+    /// [`Arg`] that was expected
+    ///
+    /// For [`Arg::Value`], the contents are assumed to be a placeholder
+    fn ok_or_missing(self, expected: Arg<'static>) -> Result<T, ErrorContext<'static>>;
+}
+
+impl<T> OptionContextExt<T> for Option<T> {
+    fn ok_or_missing(self, expected: Arg<'static>) -> Result<T, ErrorContext<'static>> {
+        self.ok_or_else(|| match expected {
+            Arg::Short(short) => ErrorContext::msg(format_args!("missing required `-{short}`")),
+            Arg::Long(long) => ErrorContext::msg(format_args!("missing required `--{long}`")),
+            Arg::Escape(escape) => ErrorContext::msg(format_args!("missing required `{escape}`")),
+            Arg::Value(value) | Arg::Unexpected(value) => ErrorContext::msg(format_args!(
+                "missing required `{}`",
+                value.to_string_lossy()
+            )),
+        })
     }
 }

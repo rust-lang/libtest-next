@@ -20,6 +20,9 @@
 #[cfg(doctest)]
 pub struct ReadmeDoctests;
 
+pub use lexarg_error::Error;
+pub use lexarg_error::ErrorContext;
+pub use lexarg_error::Result;
 pub use lexarg_parser::Arg;
 pub use lexarg_parser::Parser;
 pub use lexarg_parser::RawArgs;

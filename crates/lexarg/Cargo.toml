@@ -28,6 +28,7 @@ default = []
 
 [dependencies]
 lexarg-parser = { "version" = "0.1.0", path = "../lexarg-parser" }
+lexarg-error = { "version" = "0.1.0", path = "../lexarg-error" }
 
 [dev-dependencies]
 

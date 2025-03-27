@@ -41,7 +41,6 @@ fn parse_args() -> Result<Args> {
             _ => {
                 return Err(ErrorContext::msg("unexpected argument")
                     .unexpected(arg)
-                    .within(Value(bin_name))
                     .into());
             }
         }

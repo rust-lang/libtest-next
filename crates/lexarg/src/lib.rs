@@ -76,7 +76,7 @@ impl std::fmt::Display for Error {
 /// Extensions for parsing [`Arg::Value`]
 pub trait ValueExt<'a> {
     /// Convert [`Arg::Value`]
-    fn path(self) -> &'a std::path::Path;
+    fn path(self) -> Result<&'a std::path::Path, ErrorContext<'a>>;
     /// Convert [`Arg::Value`] with a description of the intended format
     fn string(self, description: &str) -> Result<&'a str, ErrorContext<'a>>;
     /// Ensure [`Arg::Value`] is from a closed set of values
@@ -93,8 +93,8 @@ pub trait ValueExt<'a> {
 }
 
 impl<'a> ValueExt<'a> for &'a std::ffi::OsStr {
-    fn path(self) -> &'a std::path::Path {
-        std::path::Path::new(self)
+    fn path(self) -> Result<&'a std::path::Path, ErrorContext<'a>> {
+        Ok(std::path::Path::new(self))
     }
     fn string(self, description: &str) -> Result<&'a str, ErrorContext<'a>> {
         self.to_str().ok_or_else(|| {
@@ -129,6 +129,31 @@ impl<'a> ValueExt<'a> for &'a std::ffi::OsStr {
         E: std::fmt::Display,
     {
         op(self).map_err(|err| ErrorContext::msg(err).unexpected(Arg::Value(self)))
+    }
+}
+
+impl<'a> ValueExt<'a> for Result<&'a std::ffi::OsStr, ErrorContext<'a>> {
+    fn path(self) -> Result<&'a std::path::Path, ErrorContext<'a>> {
+        self.and_then(|os| os.path())
+    }
+    fn string(self, description: &str) -> Result<&'a str, ErrorContext<'a>> {
+        self.and_then(|os| os.string(description))
+    }
+    fn one_of(self, possible: &[&str]) -> Result<&'a str, ErrorContext<'a>> {
+        self.and_then(|os| os.one_of(possible))
+    }
+    fn parse<T: std::str::FromStr>(self) -> Result<T, ErrorContext<'a>>
+    where
+        T::Err: std::fmt::Display,
+    {
+        self.and_then(|os| os.parse())
+    }
+    fn try_map<F, T, E>(self, op: F) -> Result<T, ErrorContext<'a>>
+    where
+        F: FnOnce(&'a std::ffi::OsStr) -> Result<T, E>,
+        E: std::fmt::Display,
+    {
+        self.and_then(|os| os.try_map(op))
     }
 }
 

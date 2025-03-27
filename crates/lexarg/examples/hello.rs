@@ -25,7 +25,6 @@ fn parse_args() -> Result<Args> {
                 number = parser
                     .next_flag_value()
                     .ok_or_missing(Value(std::ffi::OsStr::new("NUM")))
-                    .within(arg)?
                     .parse()
                     .within(arg)?;
             }

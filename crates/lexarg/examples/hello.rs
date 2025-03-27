@@ -22,11 +22,12 @@ fn parse_args() -> Result<Args> {
     while let Some(arg) = parser.next_arg() {
         match arg {
             Short("n") | Long("number") => {
-                let value = parser
+                number = parser
                     .next_flag_value()
                     .ok_or_missing(Value(std::ffi::OsStr::new("NUM")))
+                    .within(arg)?
+                    .parse()
                     .within(arg)?;
-                number = value.parse().within(arg)?;
             }
             Long("shout") => {
                 shout = true;

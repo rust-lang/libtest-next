@@ -79,6 +79,7 @@ fn parse<'p>(
         .next_raw()
         .expect("first arg, no pending values")
         .unwrap_or(std::ffi::OsStr::new("test"));
+    let mut prev_arg = cli::Arg::Value(bin);
     while let Some(arg) = parser.next_arg() {
         match arg {
             cli::Arg::Short("h") | cli::Arg::Long("help") => {
@@ -96,10 +97,17 @@ fn parse<'p>(
             }
             // All values are the same, whether escaped or not, so its a no-op
             cli::Arg::Escape(_) => {
+                prev_arg = arg;
                 continue;
+            }
+            cli::Arg::Unexpected(_) => {
+                return Err(cli::ErrorContext::msg("unexpected value")
+                    .unexpected(arg)
+                    .within(prev_arg));
             }
             _ => {}
         }
+        prev_arg = arg;
 
         let arg = test_opts.parse_next(parser, arg)?;
 

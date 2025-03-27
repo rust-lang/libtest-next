@@ -93,6 +93,10 @@ fn parse<'p>(
                 );
                 std::process::exit(0);
             }
+            // All values are the same, whether escaped or not, so its a no-op
+            cli::Arg::Escape(_) => {
+                continue;
+            }
             _ => {}
         }
 

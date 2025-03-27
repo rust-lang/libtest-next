@@ -455,8 +455,6 @@ impl TestOptsParseState {
                     .map_err(ErrorContext::msg)?;
                 self.opts.shuffle_seed = Some(seed);
             }
-            // All values are the same, whether escaped or not, so its a no-op
-            Arg::Escape(_) => {}
             Arg::Value(filter) => {
                 let filter = filter
                     .to_str()

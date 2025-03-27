@@ -305,36 +305,38 @@ impl TestOptsParseState {
         parser: &mut lexarg::Parser<'a>,
         arg: Arg<'a>,
     ) -> Result<Option<Arg<'a>>, ErrorContext<'a>> {
+        use lexarg::prelude::*;
+
         match arg {
-            Arg::Long("include-ignored") => {
+            Long("include-ignored") => {
                 self.include_ignored = true;
             }
-            Arg::Long("ignored") => self.ignored = true,
-            Arg::Long("force-run-in-process") => {
+            Long("ignored") => self.ignored = true,
+            Long("force-run-in-process") => {
                 self.opts.force_run_in_process = true;
             }
-            Arg::Long("exclude-should-panic") => {
+            Long("exclude-should-panic") => {
                 self.opts.exclude_should_panic = true;
             }
-            Arg::Long("test") => {
+            Long("test") => {
                 self.opts.run_tests = true;
             }
-            Arg::Long("bench") => {
+            Long("bench") => {
                 self.opts.bench_benchmarks = true;
             }
-            Arg::Long("list") => {
+            Long("list") => {
                 self.opts.list = true;
             }
-            Arg::Long("logfile") => {
+            Long("logfile") => {
                 let path = parser
                     .next_flag_value()
                     .ok_or_else(|| ErrorContext::msg("`--logfile` requires a path"))?;
                 self.opts.logfile = Some(std::path::PathBuf::from(path));
             }
-            Arg::Long("nocapture") => {
+            Long("nocapture") => {
                 self.opts.nocapture = true;
             }
-            Arg::Long("test-threads") => {
+            Long("test-threads") => {
                 let test_threads = parser
                     .next_flag_value()
                     .ok_or_else(|| {
@@ -351,7 +353,7 @@ impl TestOptsParseState {
                     }
                 };
             }
-            Arg::Long("skip") => {
+            Long("skip") => {
                 let filter = parser
                     .next_flag_value()
                     .ok_or_else(|| ErrorContext::msg("`--skip` requires a value"))?
@@ -359,10 +361,10 @@ impl TestOptsParseState {
                     .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 self.opts.skip.push(filter.to_owned());
             }
-            Arg::Long("exact") => {
+            Long("exact") => {
                 self.opts.filter_exact = true;
             }
-            Arg::Long("color") => {
+            Long("color") => {
                 let color = parser
                     .next_flag_value()
                     .ok_or_else(|| {
@@ -381,11 +383,11 @@ impl TestOptsParseState {
                     }
                 };
             }
-            Arg::Short("q") | Arg::Long("quiet") => {
+            Short("q") | Long("quiet") => {
                 self.format = None;
                 self.quiet = true;
             }
-            Arg::Long("format") => {
+            Long("format") => {
                 self.quiet = false;
                 let format = parser
                     .next_flag_value()
@@ -408,10 +410,10 @@ impl TestOptsParseState {
                     }
                 });
             }
-            Arg::Long("show-output") => {
+            Long("show-output") => {
                 self.opts.options.display_output = true;
             }
-            Arg::Short("Z") => {
+            Short("Z") => {
                 let feature = parser
                     .next_flag_value()
                     .ok_or_else(|| ErrorContext::msg("`-Z` requires a feature name"))?
@@ -425,10 +427,10 @@ impl TestOptsParseState {
                 // Don't validate `feature` as other parsers might provide values
                 self.opts.allowed_unstable.push(feature.to_owned());
             }
-            Arg::Long("report-time") => {
+            Long("report-time") => {
                 self.opts.time_options.get_or_insert_with(Default::default);
             }
-            Arg::Long("ensure-time") => {
+            Long("ensure-time") => {
                 let time = self.opts.time_options.get_or_insert_with(Default::default);
                 time.error_on_excess = true;
                 if let Some(threshold) = TimeThreshold::from_env_var("RUST_TEST_TIME_UNIT")? {
@@ -442,10 +444,10 @@ impl TestOptsParseState {
                     time.doctest_threshold = threshold;
                 }
             }
-            Arg::Long("shuffle") => {
+            Long("shuffle") => {
                 self.opts.shuffle = true;
             }
-            Arg::Long("shuffle-seed") => {
+            Long("shuffle-seed") => {
                 let seed = parser
                     .next_flag_value()
                     .ok_or_else(|| ErrorContext::msg("`--shuffle-seed` requires a value"))?
@@ -455,7 +457,7 @@ impl TestOptsParseState {
                     .map_err(ErrorContext::msg)?;
                 self.opts.shuffle_seed = Some(seed);
             }
-            Arg::Value(filter) => {
+            Value(filter) => {
                 let filter = filter
                     .to_str()
                     .ok_or_else(|| ErrorContext::msg("unsupported value"))?;

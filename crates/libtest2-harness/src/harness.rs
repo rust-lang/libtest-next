@@ -112,22 +112,7 @@ fn parse<'p>(
         let arg = test_opts.parse_next(parser, arg)?;
 
         if let Some(arg) = arg {
-            let msg = match arg {
-                cli::Arg::Short(v) => {
-                    format!("unrecognized `-{v}` flag")
-                }
-                cli::Arg::Long(v) => {
-                    format!("unrecognized `--{v}` flag")
-                }
-                cli::Arg::Escape(_) => "handled `--`".to_owned(),
-                cli::Arg::Value(v) => {
-                    format!("unrecognized `{}` value", v.to_string_lossy())
-                }
-                cli::Arg::Unexpected(v) => {
-                    format!("unexpected `{}` value", v.to_string_lossy())
-                }
-            };
-            return Err(cli::ErrorContext::msg(msg));
+            return Err(cli::ErrorContext::msg("unexpected argument").unexpected(arg));
         }
     }
 

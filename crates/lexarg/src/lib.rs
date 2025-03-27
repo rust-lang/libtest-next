@@ -4,67 +4,13 @@
 //! further so it can be used for CLI plugin systems.
 //!
 //! ## Example
+//!
 //! ```no_run
-//! struct Args {
-//!     thing: String,
-//!     number: u32,
-//!     shout: bool,
-//! }
-//!
-//! fn parse_args() -> Result<Args, &'static str> {
-//!     use lexarg::Arg::*;
-//!
-//!     let mut thing = None;
-//!     let mut number = 1;
-//!     let mut shout = false;
-//!     let mut raw = std::env::args_os().collect::<Vec<_>>();
-//!     let mut parser = lexarg::Parser::new(&raw);
-//!     parser.bin();
-//!     while let Some(arg) = parser.next() {
-//!         match arg {
-//!             Short('n') | Long("number") => {
-//!                 number = parser
-//!                     .flag_value().ok_or("`--number` requires a value")?
-//!                     .to_str().ok_or("invalid number")?
-//!                     .parse().map_err(|_e| "invalid number")?;
-//!             }
-//!             Long("shout") => {
-//!                 shout = true;
-//!             }
-//!             Value(val) if thing.is_none() => {
-//!                 thing = Some(val.to_str().ok_or("invalid number")?);
-//!             }
-//!             Long("help") => {
-//!                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
-//!                 std::process::exit(0);
-//!             }
-//!             _ => {
-//!                 return Err("unexpected argument");
-//!             }
-//!         }
-//!     }
-//!
-//!     Ok(Args {
-//!         thing: thing.ok_or("missing argument THING")?.to_owned(),
-//!         number,
-//!         shout,
-//!     })
-//! }
-//!
-//! fn main() -> Result<(), String> {
-//!     let args = parse_args()?;
-//!     let mut message = format!("Hello {}", args.thing);
-//!     if args.shout {
-//!         message = message.to_uppercase();
-//!     }
-//!     for _ in 0..args.number {
-//!         println!("{}", message);
-//!     }
-//!     Ok(())
-//! }
+#![doc = include_str!("../examples/hello.rs")]
 //! ```
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![allow(clippy::result_unit_err)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_docs)]
 #![warn(clippy::print_stderr)]
@@ -110,24 +56,16 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Extract the binary name before parsing [`Arg`]s
+    /// Get the next option or positional [`Arg`].
     ///
-    /// # Panic
+    /// Returns `None` if the command line has been exhausted.
     ///
-    /// Will panic if `next` has been called
-    pub fn bin(&mut self) -> Option<&'a OsStr> {
-        assert_eq!(self.current, 0);
-        self.next_raw()
-    }
-
-    /// Get the next option or positional argument.
+    /// Returns [`Arg::Unexpected`] on failure
     ///
-    /// A return value of `Ok(None)` means the command line has been exhausted.
-    ///
-    /// Options that are not valid unicode are transformed with replacement
-    /// characters as by [`String::from_utf8_lossy`].
-    #[allow(clippy::should_implement_trait)]
-    pub fn next(&mut self) -> Option<Arg<'a>> {
+    /// Notes:
+    /// - `=` is always accepted as a [`Arg::Short("=")`].  If that isn't the case in your
+    ///   application, you may want to special case the error for that.
+    pub fn next_arg(&mut self) -> Option<Arg<'a>> {
         // Always reset
         self.was_attached = false;
 
@@ -139,48 +77,26 @@ impl<'a> Parser<'a> {
                 Some(Arg::Unexpected(attached))
             }
             Some(State::PendingShorts(valid, invalid, index)) => {
-                // We're somewhere inside a -abc chain. Because we're in .next(), not .flag_value(), we
+                // We're somewhere inside a `-abc` chain. Because we're in `.next_arg()`, not `.next_flag_value()`, we
                 // can assume that the next character is another option.
-                let unparsed = &valid[index..];
-                let mut char_indices = unparsed.char_indices();
-                if let Some((0, short)) = char_indices.next() {
-                    if matches!(short, '=' | '-') {
-                        let arg = self
-                            .raw
-                            .get(self.current)
-                            .expect("`current` is valid if state is `Shorts`");
-                        // SAFETY: everything preceding `index` were a short flags, making them valid UTF-8
-                        let unexpected_index = if index == 1 {
-                            0
-                        } else if short == '=' {
-                            index + 1
-                        } else {
-                            index
-                        };
-                        let unexpected = unsafe { ext::split_at(arg, unexpected_index) }.1;
-
+                if let Some(next_index) = ceil_char_boundary(valid, index) {
+                    if next_index < valid.len() {
+                        self.state = Some(State::PendingShorts(valid, invalid, next_index));
+                    } else if !invalid.is_empty() {
+                        self.state = Some(State::PendingValue(invalid));
+                    } else {
+                        // No more flags
                         self.state = None;
                         self.current += 1;
-                        Some(Arg::Unexpected(unexpected))
-                    } else {
-                        if let Some((offset, _)) = char_indices.next() {
-                            let next_index = index + offset;
-                            // Might have more flags
-                            self.state = Some(State::PendingShorts(valid, invalid, next_index));
-                        } else {
-                            // No more flags
-                            if invalid.is_empty() {
-                                self.state = None;
-                                self.current += 1;
-                            } else {
-                                self.state = Some(State::PendingValue(invalid));
-                            }
-                        }
-                        Some(Arg::Short(short))
                     }
+                    let flag = &valid[index..next_index];
+                    Some(Arg::Short(flag))
                 } else {
                     debug_assert_ne!(invalid, "");
-                    if index == 1 {
+                    if index == 0 {
+                        panic!("there should have been a `-`")
+                    } else if index == 1 {
+                        // Like long flags, include `-`
                         let arg = self
                             .raw
                             .get(self.current)
@@ -197,14 +113,14 @@ impl<'a> Parser<'a> {
             }
             Some(State::Escaped) => {
                 self.state = Some(State::Escaped);
-                self.next_raw().map(Arg::Value)
+                self.next_raw_().map(Arg::Value)
             }
             None => {
                 let arg = self.raw.get(self.current)?;
                 if arg == "--" {
                     self.state = Some(State::Escaped);
                     self.current += 1;
-                    Some(Arg::Escape)
+                    Some(Arg::Escape(arg.to_str().expect("`--` is valid UTF-8")))
                 } else if arg == "-" {
                     self.state = None;
                     self.current += 1;
@@ -235,7 +151,7 @@ impl<'a> Parser<'a> {
                     let (valid, invalid) = split_nonutf8_once(arg);
                     let invalid = invalid.unwrap_or_default();
                     self.state = Some(State::PendingShorts(valid, invalid, 1));
-                    self.next()
+                    self.next_arg()
                 } else {
                     self.state = None;
                     self.current += 1;
@@ -248,32 +164,35 @@ impl<'a> Parser<'a> {
     /// Get a flag's value
     ///
     /// This function should normally be called right after seeing a flag that expects a value;
-    /// positional arguments should be collected with [`Parser::next()`].
+    /// positional arguments should be collected with [`Parser::next_arg()`].
     ///
     /// A value is collected even if it looks like an option (i.e., starts with `-`).
     ///
     /// `None` is returned if there is not another applicable flag value, including:
     /// - No more arguments are present
     /// - `--` was encountered, meaning all remaining arguments are positional
-    /// - Being called again when the first value was attached (e.g. `--hello=world`)
-    pub fn flag_value(&mut self) -> Option<&'a OsStr> {
-        if let Some(value) = self.next_attached_value() {
-            self.was_attached = true;
-            return Some(value);
+    /// - Being called again when the first value was attached (`--flag=value`, `-Fvalue`, `-F=value`)
+    pub fn next_flag_value(&mut self) -> Option<&'a OsStr> {
+        if self.was_attached {
+            debug_assert!(!self.has_pending());
+            None
+        } else if let Some(value) = self.next_attached_value() {
+            Some(value)
+        } else {
+            self.next_detached_value()
         }
-
-        if !self.was_attached {
-            return self.next_value();
-        }
-
-        None
     }
 
-    fn next_attached_value(&mut self) -> Option<&'a OsStr> {
+    /// Get a flag's attached value (`--flag=value`, `-Fvalue`, `-F=value`)
+    ///
+    /// This is a more specialized variant of [`Parser::next_flag_value`] for when only attached
+    /// values are allowed, e.g. `--color[=<when>]`.
+    pub fn next_attached_value(&mut self) -> Option<&'a OsStr> {
         match self.state? {
             State::PendingValue(attached) => {
                 self.state = None;
                 self.current += 1;
+                self.was_attached = true;
                 Some(attached)
             }
             State::PendingShorts(_, _, index) => {
@@ -288,40 +207,76 @@ impl<'a> Parser<'a> {
                 } else {
                     // SAFETY: everything preceding `index` were a short flags, making them valid UTF-8
                     let remainder = unsafe { ext::split_at(arg, index) }.1;
-                    let remainder = remainder.split_once("=").map(|s| s.1).unwrap_or(remainder);
+                    let remainder = remainder.strip_prefix("=").unwrap_or(remainder);
+                    self.was_attached = true;
                     Some(remainder)
                 }
             }
-            State::Escaped => {
-                self.state = Some(State::Escaped);
-                None
-            }
+            State::Escaped => None,
         }
     }
 
-    fn next_value(&mut self) -> Option<&'a OsStr> {
+    fn next_detached_value(&mut self) -> Option<&'a OsStr> {
         if self.state == Some(State::Escaped) {
             // Escaped values are positional-only
             return None;
         }
 
-        let next = self.next_raw()?;
-
-        if next == "--" {
-            self.state = Some(State::Escaped);
+        if self.peek_raw_()? == "--" {
             None
         } else {
-            Some(next)
+            self.next_raw_()
         }
     }
 
-    fn next_raw(&mut self) -> Option<&'a OsStr> {
+    /// Get the next argument, independent of what it looks like
+    ///
+    /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
+    pub fn next_raw(&mut self) -> Result<Option<&'a OsStr>, ()> {
+        if self.has_pending() {
+            Err(())
+        } else {
+            self.was_attached = false;
+            Ok(self.next_raw_())
+        }
+    }
+
+    /// Collect all remaining arguments, independent of what they look like
+    ///
+    /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
+    pub fn remaining_raw(&mut self) -> Result<impl Iterator<Item = &'a OsStr> + '_, ()> {
+        if self.has_pending() {
+            Err(())
+        } else {
+            self.was_attached = false;
+            Ok(std::iter::from_fn(|| self.next_raw_()))
+        }
+    }
+
+    /// Get the next argument, independent of what it looks like
+    ///
+    /// Returns `Err(())` if an [attached value][Parser::next_attached_value] is present
+    pub fn peek_raw(&self) -> Result<Option<&'a OsStr>, ()> {
+        if self.has_pending() {
+            Err(())
+        } else {
+            Ok(self.peek_raw_())
+        }
+    }
+
+    fn peek_raw_(&self) -> Option<&'a OsStr> {
+        self.raw.get(self.current)
+    }
+
+    fn next_raw_(&mut self) -> Option<&'a OsStr> {
+        debug_assert!(!self.has_pending());
+        debug_assert!(!self.was_attached);
+
         let next = self.raw.get(self.current)?;
         self.current += 1;
         Some(next)
     }
 
-    #[cfg(test)]
     fn has_pending(&self) -> bool {
         self.state.as_ref().map(State::has_pending).unwrap_or(false)
     }
@@ -406,19 +361,18 @@ where
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum State<'a> {
-    /// We have a value left over from --option=value.
+    /// We have a value left over from `--option=value`
     PendingValue(&'a OsStr),
-    /// We're in the middle of -abc.
+    /// We're in the middle of `-abc`
     ///
     /// On Windows and other non-UTF8-OsString platforms this Vec should
     /// only ever contain valid UTF-8 (and could instead be a String).
     PendingShorts(&'a str, &'a OsStr, usize),
-    /// We saw -- and know no more options are coming.
+    /// We saw `--` and know no more options are coming.
     Escaped,
 }
 
 impl State<'_> {
-    #[cfg(test)]
     fn has_pending(&self) -> bool {
         match self {
             Self::PendingValue(_) | Self::PendingShorts(_, _, _) => true,
@@ -427,17 +381,19 @@ impl State<'_> {
     }
 }
 
-/// A command line argument found by [`Parser`], either an option or a positional argument.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A command line argument found by [`Parser`], either an option or a positional argument
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Arg<'a> {
-    /// A short option, e.g. `Short('q')` for `-q`.
-    Short(char),
-    /// A long option, e.g. `Long("verbose")` for `--verbose`. (The dashes are not included.)
+    /// A short option, e.g. `Short("q")` for `-q`
+    Short(&'a str),
+    /// A long option, e.g. `Long("verbose")` for `--verbose`
+    ///
+    /// The dashes are not included
     Long(&'a str),
-    /// A positional argument, e.g. `/dev/null`.
+    /// A positional argument, e.g. `/dev/null`
     Value(&'a OsStr),
     /// Marks the following values have been escaped with `--`
-    Escape,
+    Escape(&'a str),
     /// User passed something in that doesn't work
     Unexpected(&'a OsStr),
 }
@@ -452,6 +408,10 @@ fn split_nonutf8_once(b: &OsStr) -> (&str, Option<&OsStr>) {
             (valid, Some(after_valid))
         }
     }
+}
+
+fn ceil_char_boundary(s: &str, curr_boundary: usize) -> Option<usize> {
+    (curr_boundary + 1..=s.len()).find(|i| s.is_char_boundary(*i))
 }
 
 mod private {
@@ -471,88 +431,90 @@ mod tests {
     #[test]
     fn test_basic() {
         let mut p = Parser::new(&["-n", "10", "foo", "-", "--", "baz", "-qux"]);
-        assert_eq!(p.next().unwrap(), Short('n'));
-        assert_eq!(p.flag_value().unwrap(), "10");
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("foo")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
-        assert_eq!(p.next().unwrap(), Escape);
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("baz")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-qux")));
-        assert_eq!(p.next(), None);
-        assert_eq!(p.next(), None);
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("n"));
+        assert_eq!(p.next_flag_value().unwrap(), "10");
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("foo")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("baz")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-qux")));
+        assert_eq!(p.next_arg(), None);
+        assert_eq!(p.next_arg(), None);
+        assert_eq!(p.next_arg(), None);
     }
 
     #[test]
     fn test_combined() {
         let mut p = Parser::new(&["-abc", "-fvalue", "-xfvalue"]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.next().unwrap(), Short('b'));
-        assert_eq!(p.next().unwrap(), Short('c'));
-        assert_eq!(p.next().unwrap(), Short('f'));
-        assert_eq!(p.flag_value().unwrap(), "value");
-        assert_eq!(p.next().unwrap(), Short('x'));
-        assert_eq!(p.next().unwrap(), Short('f'));
-        assert_eq!(p.flag_value().unwrap(), "value");
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg().unwrap(), Short("b"));
+        assert_eq!(p.next_arg().unwrap(), Short("c"));
+        assert_eq!(p.next_arg().unwrap(), Short("f"));
+        assert_eq!(p.next_flag_value().unwrap(), "value");
+        assert_eq!(p.next_arg().unwrap(), Short("x"));
+        assert_eq!(p.next_arg().unwrap(), Short("f"));
+        assert_eq!(p.next_flag_value().unwrap(), "value");
+        assert_eq!(p.next_arg(), None);
     }
 
     #[test]
     fn test_long() {
         let mut p = Parser::new(&["--foo", "--bar=qux", "--foobar=qux=baz"]);
-        assert_eq!(p.next().unwrap(), Long("foo"));
-        assert_eq!(p.next().unwrap(), Long("bar"));
-        assert_eq!(p.flag_value().unwrap(), "qux");
-        assert_eq!(p.flag_value(), None);
-        assert_eq!(p.next().unwrap(), Long("foobar"));
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("qux=baz")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Long("foo"));
+        assert_eq!(p.next_arg().unwrap(), Long("bar"));
+        assert_eq!(p.next_flag_value().unwrap(), "qux");
+        assert_eq!(p.next_flag_value(), None);
+        assert_eq!(p.next_arg().unwrap(), Long("foobar"));
+        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("qux=baz")));
+        assert_eq!(p.next_arg(), None);
     }
 
     #[test]
     fn test_dash_args() {
         // "--" should indicate the end of the options
         let mut p = Parser::new(&["-x", "--", "-y"]);
-        assert_eq!(p.next().unwrap(), Short('x'));
-        assert_eq!(p.next().unwrap(), Escape);
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-y")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("x"));
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-y")));
+        assert_eq!(p.next_arg(), None);
 
         // ...even if it's an argument of an option
         let mut p = Parser::new(&["-x", "--", "-y"]);
-        assert_eq!(p.next().unwrap(), Short('x'));
-        assert_eq!(p.flag_value(), None);
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-y")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("x"));
+        assert_eq!(p.next_flag_value(), None);
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-y")));
+        assert_eq!(p.next_arg(), None);
 
         // "-" is a valid value that should not be treated as an option
         let mut p = Parser::new(&["-x", "-", "-y"]);
-        assert_eq!(p.next().unwrap(), Short('x'));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
-        assert_eq!(p.next().unwrap(), Short('y'));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("x"));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
+        assert_eq!(p.next_arg().unwrap(), Short("y"));
+        assert_eq!(p.next_arg(), None);
 
         // '-' is a silly and hard to use short option, but other parsers treat
         // it like an option in this position
         let mut p = Parser::new(&["-x-y"]);
-        assert_eq!(p.next().unwrap(), Short('x'));
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("-y")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("x"));
+        assert_eq!(p.next_arg().unwrap(), Short("-"));
+        assert_eq!(p.next_arg().unwrap(), Short("y"));
+        assert_eq!(p.next_arg(), None);
     }
 
     #[test]
     fn test_missing_value() {
         let mut p = Parser::new(&["-o"]);
-        assert_eq!(p.next().unwrap(), Short('o'));
-        assert_eq!(p.flag_value(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("o"));
+        assert_eq!(p.next_flag_value(), None);
 
         let mut q = Parser::new(&["--out"]);
-        assert_eq!(q.next().unwrap(), Long("out"));
-        assert_eq!(q.flag_value(), None);
+        assert_eq!(q.next_arg().unwrap(), Long("out"));
+        assert_eq!(q.next_flag_value(), None);
 
         let args: [&OsStr; 0] = [];
         let mut r = Parser::new(&args);
-        assert_eq!(r.flag_value(), None);
+        assert_eq!(r.next_flag_value(), None);
     }
 
     #[test]
@@ -560,38 +522,38 @@ mod tests {
         let mut p = Parser::new(&[
             "--=", "--=3", "-", "-x", "--", "-", "-x", "--", "", "-", "-x",
         ]);
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("--=")));
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("--=3")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
-        assert_eq!(p.next().unwrap(), Short('x'));
-        assert_eq!(p.next().unwrap(), Escape);
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-x")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("--")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-")));
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("-x")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("--=")));
+        assert_eq!(p.next_arg().unwrap(), Unexpected(OsStr::new("--=3")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
+        assert_eq!(p.next_arg().unwrap(), Short("x"));
+        assert_eq!(p.next_arg().unwrap(), Escape("--"));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-x")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("--")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-")));
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("-x")));
+        assert_eq!(p.next_arg(), None);
 
         let bad = bad_string("--=@");
         let args = [&bad];
         let mut q = Parser::new(&args);
-        assert_eq!(q.next().unwrap(), Unexpected(OsStr::new(&bad)));
+        assert_eq!(q.next_arg().unwrap(), Unexpected(OsStr::new(&bad)));
 
         let mut r = Parser::new(&[""]);
-        assert_eq!(r.next().unwrap(), Value(OsStr::new("")));
+        assert_eq!(r.next_arg().unwrap(), Value(OsStr::new("")));
     }
 
     #[test]
     fn test_unicode() {
         let mut p = Parser::new(&["-aµ", "--µ=10", "µ", "--foo=µ"]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.next().unwrap(), Short('µ'));
-        assert_eq!(p.next().unwrap(), Long("µ"));
-        assert_eq!(p.flag_value().unwrap(), "10");
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("µ")));
-        assert_eq!(p.next().unwrap(), Long("foo"));
-        assert_eq!(p.flag_value().unwrap(), "µ");
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg().unwrap(), Short("µ"));
+        assert_eq!(p.next_arg().unwrap(), Long("µ"));
+        assert_eq!(p.next_flag_value().unwrap(), "10");
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("µ")));
+        assert_eq!(p.next_arg().unwrap(), Long("foo"));
+        assert_eq!(p.next_flag_value().unwrap(), "µ");
     }
 
     #[cfg(any(unix, target_os = "wasi", windows))]
@@ -599,24 +561,24 @@ mod tests {
     fn test_mixed_invalid() {
         let args = [bad_string("--foo=@@@")];
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Long("foo"));
-        assert_eq!(p.flag_value().unwrap(), bad_string("@@@"));
+        assert_eq!(p.next_arg().unwrap(), Long("foo"));
+        assert_eq!(p.next_flag_value().unwrap(), bad_string("@@@"));
 
         let args = [bad_string("-💣@@@")];
         let mut q = Parser::new(&args);
-        assert_eq!(q.next().unwrap(), Short('💣'));
-        assert_eq!(q.flag_value().unwrap(), bad_string("@@@"));
+        assert_eq!(q.next_arg().unwrap(), Short("💣"));
+        assert_eq!(q.next_flag_value().unwrap(), bad_string("@@@"));
 
         let args = [bad_string("-f@@@")];
         let mut r = Parser::new(&args);
-        assert_eq!(r.next().unwrap(), Short('f'));
-        assert_eq!(r.next().unwrap(), Unexpected(&bad_string("@@@")));
-        assert_eq!(r.next(), None);
+        assert_eq!(r.next_arg().unwrap(), Short("f"));
+        assert_eq!(r.next_arg().unwrap(), Unexpected(&bad_string("@@@")));
+        assert_eq!(r.next_arg(), None);
 
         let args = [bad_string("--foo=bar=@@@")];
         let mut s = Parser::new(&args);
-        assert_eq!(s.next().unwrap(), Long("foo"));
-        assert_eq!(s.flag_value().unwrap(), bad_string("bar=@@@"));
+        assert_eq!(s.next_arg().unwrap(), Long("foo"));
+        assert_eq!(s.next_flag_value().unwrap(), bad_string("bar=@@@"));
     }
 
     #[cfg(any(unix, target_os = "wasi", windows))]
@@ -624,8 +586,8 @@ mod tests {
     fn test_separate_invalid() {
         let args = [bad_string("--foo"), bad_string("@@@")];
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Long("foo"));
-        assert_eq!(p.flag_value().unwrap(), bad_string("@@@"));
+        assert_eq!(p.next_arg().unwrap(), Long("foo"));
+        assert_eq!(p.next_flag_value().unwrap(), bad_string("@@@"));
     }
 
     #[cfg(any(unix, target_os = "wasi", windows))]
@@ -633,13 +595,13 @@ mod tests {
     fn test_invalid_long_option() {
         let args = [bad_string("--@=10")];
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Unexpected(&args[0]));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Unexpected(&args[0]));
+        assert_eq!(p.next_arg(), None);
 
         let args = [bad_string("--@")];
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Unexpected(&args[0]));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Unexpected(&args[0]));
+        assert_eq!(p.next_arg(), None);
     }
 
     #[cfg(any(unix, target_os = "wasi", windows))]
@@ -647,46 +609,65 @@ mod tests {
     fn test_invalid_short_option() {
         let args = [bad_string("-@")];
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Unexpected(&args[0]));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Unexpected(&args[0]));
+        assert_eq!(p.next_arg(), None);
     }
 
     #[test]
     fn short_opt_equals_sign() {
         let mut p = Parser::new(&["-a=b"]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.flag_value().unwrap(), OsStr::new("b"));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("b"));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-a=b", "c"]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.flag_value().unwrap(), OsStr::new("b"));
-        assert_eq!(p.flag_value(), None);
-        assert_eq!(p.next().unwrap(), Value(OsStr::new("c")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("b"));
+        assert_eq!(p.next_flag_value(), None);
+        assert_eq!(p.next_arg().unwrap(), Value(OsStr::new("c")));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-a=b"]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("b")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg().unwrap(), Short("="));
+        assert_eq!(p.next_arg().unwrap(), Short("b"));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-a="]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.flag_value().unwrap(), OsStr::new(""));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new(""));
+        assert_eq!(p.next_arg(), None);
+
+        let mut p = Parser::new(&["-a=="]);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("="));
+        assert_eq!(p.next_arg(), None);
+
+        let mut p = Parser::new(&["-abc=de"]);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("bc=de"));
+        assert_eq!(p.next_arg(), None);
+
+        let mut p = Parser::new(&["-abc==de"]);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg().unwrap(), Short("b"));
+        assert_eq!(p.next_arg().unwrap(), Short("c"));
+        assert_eq!(p.next_flag_value().unwrap(), OsStr::new("=de"));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-a="]);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg().unwrap(), Short("="));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-="]);
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("-=")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("="));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&["-=a"]);
-        assert_eq!(p.next().unwrap(), Unexpected(OsStr::new("-=a")));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("="));
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg(), None);
     }
 
     #[cfg(any(unix, target_os = "wasi", windows))]
@@ -695,14 +676,38 @@ mod tests {
         let bad = bad_string("@");
         let args = [bad_string("-a=@")];
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.flag_value().unwrap(), bad_string("@"));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_flag_value().unwrap(), bad_string("@"));
+        assert_eq!(p.next_arg(), None);
 
         let mut p = Parser::new(&args);
-        assert_eq!(p.next().unwrap(), Short('a'));
-        assert_eq!(p.next().unwrap(), Unexpected(&bad));
-        assert_eq!(p.next(), None);
+        assert_eq!(p.next_arg().unwrap(), Short("a"));
+        assert_eq!(p.next_arg().unwrap(), Short("="));
+        assert_eq!(p.next_arg().unwrap(), Unexpected(&bad));
+        assert_eq!(p.next_arg(), None);
+    }
+
+    #[test]
+    fn remaining_raw() {
+        let mut p = Parser::new(&["-a", "b", "c", "d"]);
+        assert_eq!(
+            p.remaining_raw().unwrap().collect::<Vec<_>>(),
+            &["-a", "b", "c", "d"]
+        );
+        // Consumed all
+        assert!(p.next_arg().is_none());
+        assert!(p.remaining_raw().is_ok());
+        assert_eq!(p.remaining_raw().unwrap().collect::<Vec<_>>().len(), 0);
+
+        let mut p = Parser::new(&["-ab", "c", "d"]);
+        p.next_arg().unwrap();
+        // Attached value
+        assert!(p.remaining_raw().is_err());
+        p.next_attached_value().unwrap();
+        assert_eq!(p.remaining_raw().unwrap().collect::<Vec<_>>(), &["c", "d"]);
+        // Consumed all
+        assert!(p.next_arg().is_none());
+        assert_eq!(p.remaining_raw().unwrap().collect::<Vec<_>>().len(), 0);
     }
 
     /// Transform @ characters into invalid unicode.
@@ -800,7 +805,7 @@ mod tests {
         if parser.has_pending() {
             {
                 let mut parser = parser.clone();
-                let next = parser.next();
+                let next = parser.next_arg();
                 assert!(
                     matches!(next, Some(Unexpected(_)) | Some(Short(_))),
                     "{next:?} via {path:?}",
@@ -812,7 +817,7 @@ mod tests {
 
             {
                 let mut parser = parser.clone();
-                let next = parser.flag_value();
+                let next = parser.next_flag_value();
                 assert!(next.is_some(), "{next:?} via {path:?}",);
                 let mut path = path;
                 path.push(format!("pending-value-{next:?}"));
@@ -821,7 +826,7 @@ mod tests {
         } else {
             {
                 let mut parser = parser.clone();
-                let next = parser.next();
+                let next = parser.next_arg();
                 match &next {
                     None => {
                         assert!(
@@ -840,14 +845,17 @@ mod tests {
 
             {
                 let mut parser = parser.clone();
-                let next = parser.flag_value();
+                let next = parser.next_flag_value();
                 match &next {
                     None => {
                         assert!(
                             matches!(parser.state, None | Some(State::Escaped)),
                             "{next:?} via {path:?}",
                         );
-                        if parser.state.is_none() && !parser.was_attached {
+                        if parser.state.is_none()
+                            && !parser.was_attached
+                            && parser.peek_raw_() != Some(OsStr::new("--"))
+                        {
                             assert_eq!(parser.current, parser.raw.len(), "{next:?} via {path:?}",);
                         }
                     }

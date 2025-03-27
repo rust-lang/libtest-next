@@ -27,9 +27,9 @@ pre-release-replacements = [
 default = []
 
 [dependencies]
+lexarg = { "version" = "0.1.0", path = "../lexarg" }
 
 [dev-dependencies]
-lexarg = { "version" = "0.1.0", path = "../lexarg" }
 
 [lints]
 workspace = true

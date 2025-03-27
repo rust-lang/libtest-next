@@ -73,10 +73,10 @@ const ERROR_EXIT_CODE: i32 = 101;
 fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> {
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
 
-    let bin = parser.bin();
-    while let Some(arg) = parser.next() {
+    let bin = parser.next_raw().expect("first arg, no pending values");
+    while let Some(arg) = parser.next_arg() {
         match arg {
-            cli::Arg::Short('h') | cli::Arg::Long("help") => {
+            cli::Arg::Short("h") | cli::Arg::Long("help") => {
                 let bin = bin
                     .unwrap_or_else(|| std::ffi::OsStr::new("test"))
                     .to_string_lossy();
@@ -104,7 +104,7 @@ fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> 
                 cli::Arg::Long(v) => {
                     format!("unrecognized `--{v}` flag")
                 }
-                cli::Arg::Escape => "handled `--`".to_owned(),
+                cli::Arg::Escape(_) => "handled `--`".to_owned(),
                 cli::Arg::Value(v) => {
                     format!("unrecognized `{}` value", v.to_string_lossy())
                 }

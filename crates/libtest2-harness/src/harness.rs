@@ -70,16 +70,20 @@ impl Harness {
 
 const ERROR_EXIT_CODE: i32 = 101;
 
-fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> {
+fn parse<'p>(
+    parser: &mut cli::Parser<'p>,
+) -> Result<libtest_lexarg::TestOpts, cli::ErrorContext<'p>> {
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
 
-    let bin = parser.next_raw().expect("first arg, no pending values");
+    let bin = parser
+        .next_raw()
+        .expect("first arg, no pending values")
+        .unwrap_or(std::ffi::OsStr::new("test"));
+    let mut prev_arg = cli::Arg::Value(bin);
     while let Some(arg) = parser.next_arg() {
         match arg {
             cli::Arg::Short("h") | cli::Arg::Long("help") => {
-                let bin = bin
-                    .unwrap_or_else(|| std::ffi::OsStr::new("test"))
-                    .to_string_lossy();
+                let bin = bin.to_string_lossy();
                 let options_help = libtest_lexarg::OPTIONS_HELP.trim();
                 let after_help = libtest_lexarg::AFTER_HELP.trim();
                 println!(
@@ -91,28 +95,24 @@ fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> 
                 );
                 std::process::exit(0);
             }
+            // All values are the same, whether escaped or not, so its a no-op
+            cli::Arg::Escape(_) => {
+                prev_arg = arg;
+                continue;
+            }
+            cli::Arg::Unexpected(_) => {
+                return Err(cli::ErrorContext::msg("unexpected value")
+                    .unexpected(arg)
+                    .within(prev_arg));
+            }
             _ => {}
         }
+        prev_arg = arg;
 
         let arg = test_opts.parse_next(parser, arg)?;
 
         if let Some(arg) = arg {
-            let msg = match arg {
-                cli::Arg::Short(v) => {
-                    format!("unrecognized `-{v}` flag")
-                }
-                cli::Arg::Long(v) => {
-                    format!("unrecognized `--{v}` flag")
-                }
-                cli::Arg::Escape(_) => "handled `--`".to_owned(),
-                cli::Arg::Value(v) => {
-                    format!("unrecognized `{}` value", v.to_string_lossy())
-                }
-                cli::Arg::Unexpected(v) => {
-                    format!("unexpected `{}` value", v.to_string_lossy())
-                }
-            };
-            return Err(cli::Error::msg(msg));
+            return Err(cli::ErrorContext::msg("unexpected argument").unexpected(arg));
         }
     }
 

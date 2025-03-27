@@ -1,70 +1,54 @@
-use lexarg::ErrorContext;
-use lexarg::Result;
-
 struct Args {
     thing: String,
     number: u32,
     shout: bool,
 }
 
-fn parse_args() -> Result<Args> {
-    use lexarg::prelude::*;
+fn parse_args() -> Result<Args, &'static str> {
+    #![allow(clippy::enum_glob_use)]
+    use lexarg_parser::Arg::*;
 
     let mut thing = None;
     let mut number = 1;
     let mut shout = false;
     let raw = std::env::args_os().collect::<Vec<_>>();
-    let mut parser = lexarg::Parser::new(&raw);
-    let bin_name = parser
-        .next_raw()
-        .expect("nothing parsed yet so no attached lingering")
-        .expect("always at least one");
-    let mut prev_arg = Value(bin_name);
+    let mut parser = lexarg_parser::Parser::new(&raw);
+    let _bin_name = parser.next_raw();
     while let Some(arg) = parser.next_arg() {
         match arg {
             Short("n") | Long("number") => {
                 number = parser
                     .next_flag_value()
-                    .ok_or_missing(Value(std::ffi::OsStr::new("NUM")))
+                    .ok_or("`--number` requires a value")?
+                    .to_str()
+                    .ok_or("invalid number")?
                     .parse()
-                    .within(arg)?;
+                    .map_err(|_e| "invalid number")?;
             }
             Long("shout") => {
                 shout = true;
             }
             Value(val) if thing.is_none() => {
-                thing = Some(val.string("THING")?);
+                thing = Some(val.to_str().ok_or("invalid string")?);
             }
             Short("h") | Long("help") => {
                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");
                 std::process::exit(0);
             }
-            Unexpected(_) => {
-                return Err(ErrorContext::msg("unexpected value")
-                    .unexpected(arg)
-                    .within(prev_arg)
-                    .into());
-            }
             _ => {
-                return Err(ErrorContext::msg("unexpected argument")
-                    .unexpected(arg)
-                    .into());
+                return Err("unexpected argument");
             }
         }
-        prev_arg = arg;
     }
 
     Ok(Args {
-        thing: thing
-            .ok_or_missing(Value(std::ffi::OsStr::new("THING")))
-            .within(Value(bin_name))?
-            .to_owned(),
+        thing: thing.ok_or("missing argument THING")?.to_owned(),
         number,
         shout,
     })
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), String> {
     let args = parse_args()?;
     let mut message = format!("Hello {}", args.thing);
     if args.shout {

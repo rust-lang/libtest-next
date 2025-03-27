@@ -8,8 +8,7 @@
 #![warn(missing_debug_implementations, elided_lifetimes_in_paths)]
 
 use lexarg::Arg;
-use lexarg_error::Error;
-use lexarg_error::Result;
+use lexarg_error::ErrorContext;
 
 /// Parsed command-line options
 ///
@@ -137,7 +136,7 @@ impl TimeThreshold {
     ///
     /// Panics if variable with provided name is set but contains inappropriate
     /// value.
-    fn from_env_var(env_var_name: &str) -> Result<Option<Self>> {
+    fn from_env_var(env_var_name: &str) -> Result<Option<Self>, ErrorContext<'static>> {
         use std::str::FromStr;
 
         let durations_str = match std::env::var(env_var_name) {
@@ -147,14 +146,14 @@ impl TimeThreshold {
             }
         };
         let (warn_str, critical_str) = durations_str.split_once(',').ok_or_else(|| {
-            Error::msg(format_args!(
+            ErrorContext::msg(format_args!(
                 "Duration variable {env_var_name} expected to have 2 numbers separated by comma, but got {durations_str}"
             ))
         })?;
 
         let parse_u64 = |v| {
             u64::from_str(v).map_err(|_err| {
-                Error::msg(format_args!(
+                ErrorContext::msg(format_args!(
                     "Duration value in variable {env_var_name} is expected to be a number, but got {v}"
                 ))
             })
@@ -305,7 +304,7 @@ impl TestOptsParseState {
         &mut self,
         parser: &mut lexarg::Parser<'a>,
         arg: Arg<'a>,
-    ) -> Result<Option<Arg<'a>>> {
+    ) -> Result<Option<Arg<'a>>, ErrorContext<'a>> {
         match arg {
             Arg::Long("include-ignored") => {
                 self.include_ignored = true;
@@ -329,7 +328,7 @@ impl TestOptsParseState {
             Arg::Long("logfile") => {
                 let path = parser
                     .next_flag_value()
-                    .ok_or_else(|| Error::msg("`--logfile` requires a path"))?;
+                    .ok_or_else(|| ErrorContext::msg("`--logfile` requires a path"))?;
                 self.opts.logfile = Some(std::path::PathBuf::from(path));
             }
             Arg::Long("nocapture") => {
@@ -338,22 +337,26 @@ impl TestOptsParseState {
             Arg::Long("test-threads") => {
                 let test_threads = parser
                     .next_flag_value()
-                    .ok_or_else(|| Error::msg("`--test-threads` requires a positive integer"))?
+                    .ok_or_else(|| {
+                        ErrorContext::msg("`--test-threads` requires a positive integer")
+                    })?
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?;
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 self.opts.test_threads = match test_threads.parse::<std::num::NonZeroUsize>() {
                     Ok(n) => Some(n),
                     Err(_) => {
-                        return Err(Error::msg("`--test-threads` must be a positive integer"));
+                        return Err(ErrorContext::msg(
+                            "`--test-threads` must be a positive integer",
+                        ));
                     }
                 };
             }
             Arg::Long("skip") => {
                 let filter = parser
                     .next_flag_value()
-                    .ok_or_else(|| Error::msg("`--skip` requires a value"))?
+                    .ok_or_else(|| ErrorContext::msg("`--skip` requires a value"))?
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?;
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 self.opts.skip.push(filter.to_owned());
             }
             Arg::Long("exact") => {
@@ -363,16 +366,18 @@ impl TestOptsParseState {
                 let color = parser
                     .next_flag_value()
                     .ok_or_else(|| {
-                        Error::msg("`--color` requires one of `auto`, `always`, or `never`")
+                        ErrorContext::msg("`--color` requires one of `auto`, `always`, or `never`")
                     })?
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?;
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 self.opts.color = match color {
                     "auto" => ColorConfig::AutoColor,
                     "always" => ColorConfig::AlwaysColor,
                     "never" => ColorConfig::NeverColor,
                     _ => {
-                        return Err(Error::msg("`--color` accepts `auto`, `always`, or `never`"));
+                        return Err(ErrorContext::msg(
+                            "`--color` accepts `auto`, `always`, or `never`",
+                        ));
                     }
                 };
             }
@@ -385,19 +390,19 @@ impl TestOptsParseState {
                 let format = parser
                     .next_flag_value()
                     .ok_or_else(|| {
-                        Error::msg(
+                        ErrorContext::msg(
                             "`--format` requires one of `pretty`, `terse`, `json`, or `junit`",
                         )
                     })?
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?;
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 self.format = Some(match format {
                     "pretty" => OutputFormat::Pretty,
                     "terse" => OutputFormat::Terse,
                     "json" => OutputFormat::Json,
                     "junit" => OutputFormat::Junit,
                     _ => {
-                        return Err(Error::msg(
+                        return Err(ErrorContext::msg(
                             "`--format` accepts `pretty`, `terse`, `json`, or `junit`",
                         ));
                     }
@@ -409,11 +414,13 @@ impl TestOptsParseState {
             Arg::Short("Z") => {
                 let feature = parser
                     .next_flag_value()
-                    .ok_or_else(|| Error::msg("`-Z` requires a feature name"))?
+                    .ok_or_else(|| ErrorContext::msg("`-Z` requires a feature name"))?
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?;
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 if !is_nightly() {
-                    return Err(Error::msg("`-Z` is only accepted on the nightly compiler"));
+                    return Err(ErrorContext::msg(
+                        "`-Z` is only accepted on the nightly compiler",
+                    ));
                 }
                 // Don't validate `feature` as other parsers might provide values
                 self.opts.allowed_unstable.push(feature.to_owned());
@@ -441,11 +448,11 @@ impl TestOptsParseState {
             Arg::Long("shuffle-seed") => {
                 let seed = parser
                     .next_flag_value()
-                    .ok_or_else(|| Error::msg("`--shuffle-seed` requires a value"))?
+                    .ok_or_else(|| ErrorContext::msg("`--shuffle-seed` requires a value"))?
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?
                     .parse::<u64>()
-                    .map_err(Error::msg)?;
+                    .map_err(ErrorContext::msg)?;
                 self.opts.shuffle_seed = Some(seed);
             }
             // All values are the same, whether escaped or not, so its a no-op
@@ -453,7 +460,7 @@ impl TestOptsParseState {
             Arg::Value(filter) => {
                 let filter = filter
                     .to_str()
-                    .ok_or_else(|| Error::msg("unsupported value"))?;
+                    .ok_or_else(|| ErrorContext::msg("unsupported value"))?;
                 self.opts.filters.push(filter.to_owned());
             }
             _ => {
@@ -464,7 +471,7 @@ impl TestOptsParseState {
     }
 
     /// Finish parsing, resolving to [`TestOpts`]
-    pub fn finish(mut self) -> Result<TestOpts> {
+    pub fn finish(mut self) -> Result<TestOpts, ErrorContext<'static>> {
         let allow_unstable_options = self
             .opts
             .allowed_unstable
@@ -472,19 +479,21 @@ impl TestOptsParseState {
             .any(|f| f == UNSTABLE_OPTIONS);
 
         if self.opts.force_run_in_process && !allow_unstable_options {
-            return Err(Error::msg(
+            return Err(ErrorContext::msg(
                 "`--force-run-in-process` requires `-Zunstable-options`",
             ));
         }
 
         if self.opts.exclude_should_panic && !allow_unstable_options {
-            return Err(Error::msg(
+            return Err(ErrorContext::msg(
                 "`--exclude-should-panic` requires `-Zunstable-options`",
             ));
         }
 
         if self.opts.shuffle && !allow_unstable_options {
-            return Err(Error::msg("`--shuffle` requires `-Zunstable-options`"));
+            return Err(ErrorContext::msg(
+                "`--shuffle` requires `-Zunstable-options`",
+            ));
         }
         if !self.opts.shuffle && allow_unstable_options {
             self.opts.shuffle = match std::env::var("RUST_TEST_SHUFFLE") {
@@ -494,14 +503,16 @@ impl TestOptsParseState {
         }
 
         if self.opts.shuffle_seed.is_some() && !allow_unstable_options {
-            return Err(Error::msg("`--shuffle-seed` requires `-Zunstable-options`"));
+            return Err(ErrorContext::msg(
+                "`--shuffle-seed` requires `-Zunstable-options`",
+            ));
         }
         if self.opts.shuffle_seed.is_none() && allow_unstable_options {
             self.opts.shuffle_seed = match std::env::var("RUST_TEST_SHUFFLE_SEED") {
                 Ok(val) => match val.parse::<u64>() {
                     Ok(n) => Some(n),
                     Err(_) => {
-                        return Err(Error::msg(
+                        return Err(ErrorContext::msg(
                             "RUST_TEST_SHUFFLE_SEED is `{val}`, should be a number.",
                         ));
                     }
@@ -518,7 +529,9 @@ impl TestOptsParseState {
         }
 
         if self.format.is_some() && !allow_unstable_options {
-            return Err(Error::msg("`--format` requires `-Zunstable-options`"));
+            return Err(ErrorContext::msg(
+                "`--format` requires `-Zunstable-options`",
+            ));
         }
         if let Some(format) = self.format {
             self.opts.format = format;
@@ -531,7 +544,7 @@ impl TestOptsParseState {
 
         self.opts.run_ignored = match (self.include_ignored, self.ignored) {
             (true, true) => {
-                return Err(Error::msg(
+                return Err(ErrorContext::msg(
                     "`--include-ignored` and `--ignored` are mutually exclusive",
                 ))
             }
@@ -544,7 +557,7 @@ impl TestOptsParseState {
             if let Ok(value) = std::env::var("RUST_TEST_THREADS") {
                 self.opts.test_threads =
                     Some(value.parse::<std::num::NonZeroUsize>().map_err(|_e| {
-                        Error::msg(format!(
+                        ErrorContext::msg(format!(
                             "RUST_TEST_THREADS is `{value}`, should be a positive integer."
                         ))
                     })?);

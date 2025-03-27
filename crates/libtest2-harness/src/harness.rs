@@ -70,7 +70,9 @@ impl Harness {
 
 const ERROR_EXIT_CODE: i32 = 101;
 
-fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> {
+fn parse<'p>(
+    parser: &mut cli::Parser<'p>,
+) -> Result<libtest_lexarg::TestOpts, cli::ErrorContext<'p>> {
     let mut test_opts = libtest_lexarg::TestOptsParseState::new();
 
     let bin = parser.next_raw().expect("first arg, no pending values");
@@ -112,7 +114,7 @@ fn parse(parser: &mut cli::Parser<'_>) -> cli::Result<libtest_lexarg::TestOpts> 
                     format!("unexpected `{}` value", v.to_string_lossy())
                 }
             };
-            return Err(cli::Error::msg(msg));
+            return Err(cli::ErrorContext::msg(msg));
         }
     }
 

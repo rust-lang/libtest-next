@@ -1,7 +1,13 @@
 //! libtest-compatible argument parser
 //!
-//! This does not drive parsing but provides [`TestOptsParseState`] to plug into the parsing,
+//! This does not drive parsing but provides [`TestOptsBuilder`] to plug into the parsing,
 //! allowing additional parsers to be integrated.
+//!
+//! ## Example
+//!
+//! ```no_run
+#![doc = include_str!("../examples/libtest-cli.rs")]
+//! ```
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![forbid(unsafe_code)]
@@ -12,7 +18,7 @@ use lexarg_error::ErrorContext;
 
 /// Parsed command-line options
 ///
-/// To parse, see [`TestOptsParseState`]
+/// To parse, see [`TestOptsBuilder`]
 #[derive(Debug, Default)]
 pub struct TestOpts {
     pub list: bool,
@@ -23,7 +29,6 @@ pub struct TestOpts {
     pub run_ignored: RunIgnored,
     pub run_tests: bool,
     pub bench_benchmarks: bool,
-    pub logfile: Option<std::path::PathBuf>,
     pub nocapture: bool,
     pub color: ColorConfig,
     pub format: OutputFormat,
@@ -40,7 +45,7 @@ pub struct TestOpts {
     pub allowed_unstable: Vec<String>,
 }
 
-/// Whether ignored test should be run or not
+/// Whether ignored test should be run or not (see [`TestOpts::run_ignored`])
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum RunIgnored {
     Yes,
@@ -55,7 +60,7 @@ impl Default for RunIgnored {
     }
 }
 
-/// Whether should console output be colored or not
+/// Whether should console output be colored or not (see [`TestOpts::color`])
 #[derive(Copy, Clone, Debug)]
 pub enum ColorConfig {
     AutoColor,
@@ -69,7 +74,7 @@ impl Default for ColorConfig {
     }
 }
 
-/// Format of the test results output
+/// Format of the test results output (see [`TestOpts::format`])
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OutputFormat {
     /// Verbose output
@@ -88,7 +93,7 @@ impl Default for OutputFormat {
     }
 }
 
-/// Structure with parameters for calculating test execution time.
+/// Structure with parameters for calculating test execution time (see [`TestOpts::time_options`])
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct TestTimeOptions {
     /// Denotes if the test critical execution time limit excess should be considered
@@ -119,7 +124,7 @@ impl Default for TestTimeOptions {
     }
 }
 
-/// Structure denoting time limits for test execution.
+/// Structure denoting time limits for test execution (see [`TestTimeOptions`])
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct TimeThreshold {
     pub warn: std::time::Duration,
@@ -172,7 +177,9 @@ impl TimeThreshold {
     }
 }
 
-/// Options for the test run defined by the caller (instead of CLI arguments).
+/// Options for the test run defined by the caller (instead of CLI arguments) (see
+/// [`TestOpts::options`])
+///
 /// In case we want to add other options as well, just add them in this struct.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Options {
@@ -194,7 +201,6 @@ Options:
         --test          Run tests and not benchmarks
         --bench         Run benchmarks instead of tests
         --list          List all tests and benchmarks
-        --logfile PATH  Write logs to the specified file
         --nocapture     don't capture stdout/stderr of each task, allow
                         printing directly
         --test-threads n_threads
@@ -284,9 +290,9 @@ Test Attributes:
 
 /// Intermediate CLI parser state for [`TestOpts`]
 ///
-/// See [`TestOptsParseState::parse_next`]
+/// See [`TestOptsBuilder::parse_next`]
 #[derive(Debug, Default)]
-pub struct TestOptsParseState {
+pub struct TestOptsBuilder {
     opts: TestOpts,
     quiet: bool,
     format: Option<OutputFormat>,
@@ -294,7 +300,7 @@ pub struct TestOptsParseState {
     ignored: bool,
 }
 
-impl TestOptsParseState {
+impl TestOptsBuilder {
     pub fn new() -> Self {
         Default::default()
     }
@@ -326,14 +332,6 @@ impl TestOptsParseState {
             }
             Long("list") => {
                 self.opts.list = true;
-            }
-            Long("logfile") => {
-                let path = parser
-                    .next_flag_value()
-                    .ok_or_missing(Value(std::ffi::OsStr::new("PATH")))
-                    .path()
-                    .within(arg)?;
-                self.opts.logfile = Some(path.to_owned());
             }
             Long("nocapture") => {
                 self.opts.nocapture = true;
@@ -508,8 +506,7 @@ impl TestOptsParseState {
         }
         if let Some(format) = self.format {
             self.opts.format = format;
-        }
-        if self.quiet {
+        } else if self.quiet {
             self.opts.format = OutputFormat::Terse;
         }
 

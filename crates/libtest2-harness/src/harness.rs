@@ -73,7 +73,7 @@ const ERROR_EXIT_CODE: i32 = 101;
 fn parse<'p>(
     parser: &mut cli::Parser<'p>,
 ) -> Result<libtest_lexarg::TestOpts, cli::ErrorContext<'p>> {
-    let mut test_opts = libtest_lexarg::TestOptsParseState::new();
+    let mut test_opts = libtest_lexarg::TestOptsBuilder::new();
 
     let bin = parser
         .next_raw()
@@ -234,9 +234,6 @@ fn run(
     }
     if opts.options.panic_abort {
         todo!("panic-abort is not yet supported");
-    }
-    if opts.logfile.is_some() {
-        todo!("`--logfile` is not yet supported");
     }
 
     let threads = opts.test_threads.map(|t| t.get()).unwrap_or(1);

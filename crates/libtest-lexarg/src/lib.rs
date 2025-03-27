@@ -45,7 +45,7 @@ pub struct TestOpts {
     pub allowed_unstable: Vec<String>,
 }
 
-/// Whether ignored test should be run or not
+/// Whether ignored test should be run or not (see [`TestOpts::run_ignored`])
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum RunIgnored {
     Yes,
@@ -60,7 +60,7 @@ impl Default for RunIgnored {
     }
 }
 
-/// Whether should console output be colored or not
+/// Whether should console output be colored or not (see [`TestOpts::color`])
 #[derive(Copy, Clone, Debug)]
 pub enum ColorConfig {
     AutoColor,
@@ -74,7 +74,7 @@ impl Default for ColorConfig {
     }
 }
 
-/// Format of the test results output
+/// Format of the test results output (see [`TestOpts::format`])
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum OutputFormat {
     /// Verbose output
@@ -93,7 +93,7 @@ impl Default for OutputFormat {
     }
 }
 
-/// Structure with parameters for calculating test execution time.
+/// Structure with parameters for calculating test execution time (see [`TestOpts::time_options`])
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct TestTimeOptions {
     /// Denotes if the test critical execution time limit excess should be considered
@@ -124,7 +124,7 @@ impl Default for TestTimeOptions {
     }
 }
 
-/// Structure denoting time limits for test execution.
+/// Structure denoting time limits for test execution (see [`TestTimeOptions`])
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct TimeThreshold {
     pub warn: std::time::Duration,
@@ -177,7 +177,9 @@ impl TimeThreshold {
     }
 }
 
-/// Options for the test run defined by the caller (instead of CLI arguments).
+/// Options for the test run defined by the caller (instead of CLI arguments) (see
+/// [`TestOpts::options`])
+///
 /// In case we want to add other options as well, just add them in this struct.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Options {

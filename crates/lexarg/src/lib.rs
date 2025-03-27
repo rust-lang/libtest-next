@@ -63,7 +63,7 @@ impl From<ErrorContext<'_>> for Error {
 
 impl std::fmt::Debug for Error {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.msg.fmt(formatter)
+        write!(formatter, "{}", self.msg)
     }
 }
 

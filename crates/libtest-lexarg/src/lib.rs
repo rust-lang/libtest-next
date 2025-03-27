@@ -29,7 +29,6 @@ pub struct TestOpts {
     pub run_ignored: RunIgnored,
     pub run_tests: bool,
     pub bench_benchmarks: bool,
-    pub logfile: Option<std::path::PathBuf>,
     pub nocapture: bool,
     pub color: ColorConfig,
     pub format: OutputFormat,
@@ -200,7 +199,6 @@ Options:
         --test          Run tests and not benchmarks
         --bench         Run benchmarks instead of tests
         --list          List all tests and benchmarks
-        --logfile PATH  Write logs to the specified file
         --nocapture     don't capture stdout/stderr of each task, allow
                         printing directly
         --test-threads n_threads
@@ -332,14 +330,6 @@ impl TestOptsParseState {
             }
             Long("list") => {
                 self.opts.list = true;
-            }
-            Long("logfile") => {
-                let path = parser
-                    .next_flag_value()
-                    .ok_or_missing(Value(std::ffi::OsStr::new("PATH")))
-                    .path()
-                    .within(arg)?;
-                self.opts.logfile = Some(path.to_owned());
             }
             Long("nocapture") => {
                 self.opts.nocapture = true;

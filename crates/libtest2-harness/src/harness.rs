@@ -235,9 +235,6 @@ fn run(
     if opts.options.panic_abort {
         todo!("panic-abort is not yet supported");
     }
-    if opts.logfile.is_some() {
-        todo!("`--logfile` is not yet supported");
-    }
 
     let threads = opts.test_threads.map(|t| t.get()).unwrap_or(1);
 

@@ -33,7 +33,7 @@ fn parse_args() -> Result<Args> {
                 shout = true;
             }
             Value(val) if thing.is_none() => {
-                thing = Some(val.string("string")?);
+                thing = Some(val.string("THING")?);
             }
             Short("h") | Long("help") => {
                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");

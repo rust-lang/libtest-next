@@ -504,8 +504,7 @@ impl TestOptsParseState {
         }
         if let Some(format) = self.format {
             self.opts.format = format;
-        }
-        if self.quiet {
+        } else if self.quiet {
             self.opts.format = OutputFormat::Terse;
         }
 

@@ -1,7 +1,7 @@
 fn main() -> lexarg::Result<()> {
     use lexarg::prelude::*;
 
-    let mut test_opts = libtest_lexarg::TestOptsParseState::new();
+    let mut test_opts = libtest_lexarg::TestOptsBuilder::new();
 
     let raw = std::env::args_os().collect::<Vec<_>>();
     let mut parser = lexarg::Parser::new(&raw);

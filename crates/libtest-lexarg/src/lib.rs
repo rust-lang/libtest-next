@@ -1,6 +1,6 @@
 //! libtest-compatible argument parser
 //!
-//! This does not drive parsing but provides [`TestOptsParseState`] to plug into the parsing,
+//! This does not drive parsing but provides [`TestOptsBuilder`] to plug into the parsing,
 //! allowing additional parsers to be integrated.
 //!
 //! ## Example
@@ -18,7 +18,7 @@ use lexarg_error::ErrorContext;
 
 /// Parsed command-line options
 ///
-/// To parse, see [`TestOptsParseState`]
+/// To parse, see [`TestOptsBuilder`]
 #[derive(Debug, Default)]
 pub struct TestOpts {
     pub list: bool,
@@ -288,9 +288,9 @@ Test Attributes:
 
 /// Intermediate CLI parser state for [`TestOpts`]
 ///
-/// See [`TestOptsParseState::parse_next`]
+/// See [`TestOptsBuilder::parse_next`]
 #[derive(Debug, Default)]
-pub struct TestOptsParseState {
+pub struct TestOptsBuilder {
     opts: TestOpts,
     quiet: bool,
     format: Option<OutputFormat>,
@@ -298,7 +298,7 @@ pub struct TestOptsParseState {
     ignored: bool,
 }
 
-impl TestOptsParseState {
+impl TestOptsBuilder {
     pub fn new() -> Self {
         Default::default()
     }

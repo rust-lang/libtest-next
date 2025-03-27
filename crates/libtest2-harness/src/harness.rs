@@ -73,7 +73,7 @@ const ERROR_EXIT_CODE: i32 = 101;
 fn parse<'p>(
     parser: &mut cli::Parser<'p>,
 ) -> Result<libtest_lexarg::TestOpts, cli::ErrorContext<'p>> {
-    let mut test_opts = libtest_lexarg::TestOptsParseState::new();
+    let mut test_opts = libtest_lexarg::TestOptsBuilder::new();
 
     let bin = parser
         .next_raw()

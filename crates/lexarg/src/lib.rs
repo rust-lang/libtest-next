@@ -23,6 +23,7 @@ pub struct ReadmeDoctests;
 /// Simplify parsing of arguments
 pub mod prelude {
     pub use crate::Arg::*;
+    pub use crate::ValueExt as _;
 }
 
 pub use lexarg_error::ErrorContext;
@@ -67,5 +68,64 @@ impl std::fmt::Debug for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.msg.fmt(formatter)
+    }
+}
+
+/// Extensions for parsing [`Arg::Value`]
+pub trait ValueExt<'a> {
+    /// Convert [`Arg::Value`]
+    fn path(self) -> &'a std::path::Path;
+    /// Convert [`Arg::Value`] with a description of the intended format
+    fn string(self, description: &str) -> Result<&'a str, ErrorContext<'a>>;
+    /// Ensure [`Arg::Value`] is from a closed set of values
+    fn one_of(self, possible: &[&str]) -> Result<&'a str, ErrorContext<'a>>;
+    /// Parse [`Arg::Value`]
+    fn parse<T: std::str::FromStr>(self) -> Result<T, ErrorContext<'a>>
+    where
+        T::Err: std::fmt::Display;
+    /// Custom conversion for [`Arg::Value`]
+    fn try_map<F, T, E>(self, op: F) -> Result<T, ErrorContext<'a>>
+    where
+        F: FnOnce(&'a std::ffi::OsStr) -> Result<T, E>,
+        E: std::fmt::Display;
+}
+
+impl<'a> ValueExt<'a> for &'a std::ffi::OsStr {
+    fn path(self) -> &'a std::path::Path {
+        std::path::Path::new(self)
+    }
+    fn string(self, description: &str) -> Result<&'a str, ErrorContext<'a>> {
+        self.to_str().ok_or_else(|| {
+            ErrorContext::msg(format_args!("invalid {description}")).unexpected(Arg::Value(self))
+        })
+    }
+    fn one_of(self, possible: &[&str]) -> Result<&'a str, ErrorContext<'a>> {
+        self.to_str()
+            .filter(|v| possible.contains(v))
+            .ok_or_else(|| {
+                let mut possible = possible.iter();
+                let first = possible.next().expect("at least one possible value");
+                let mut error = format!("expected one of `{first}`");
+                for possible in possible {
+                    use std::fmt::Write as _;
+                    let _ = write!(&mut error, ", `{possible}`");
+                }
+                ErrorContext::msg(error)
+            })
+    }
+    fn parse<T: std::str::FromStr>(self) -> Result<T, ErrorContext<'a>>
+    where
+        T::Err: std::fmt::Display,
+    {
+        self.string(std::any::type_name::<T>())?
+            .parse::<T>()
+            .map_err(|err| ErrorContext::msg(err).unexpected(Arg::Value(self)))
+    }
+    fn try_map<F, T, E>(self, op: F) -> Result<T, ErrorContext<'a>>
+    where
+        F: FnOnce(&'a std::ffi::OsStr) -> Result<T, E>,
+        E: std::fmt::Display,
+    {
+        op(self).map_err(|err| ErrorContext::msg(err).unexpected(Arg::Value(self)))
     }
 }

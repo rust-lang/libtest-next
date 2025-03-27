@@ -25,24 +25,13 @@ fn parse_args() -> Result<Args> {
                 let value = parser
                     .next_flag_value()
                     .ok_or_else(|| ErrorContext::msg("missing required value").within(arg))?;
-                number = value
-                    .to_str()
-                    .ok_or_else(|| {
-                        ErrorContext::msg("invalid number")
-                            .unexpected(Value(value))
-                            .within(arg)
-                    })?
-                    .parse()
-                    .map_err(|e| ErrorContext::msg(e).unexpected(Value(value)).within(arg))?;
+                number = value.parse().map_err(|e| e.within(arg))?;
             }
             Long("shout") => {
                 shout = true;
             }
             Value(val) if thing.is_none() => {
-                thing = Some(
-                    val.to_str()
-                        .ok_or_else(|| ErrorContext::msg("invalid string").unexpected(arg))?,
-                );
+                thing = Some(val.string("string")?);
             }
             Short("h") | Long("help") => {
                 println!("Usage: hello [-n|--number=NUM] [--shout] THING");

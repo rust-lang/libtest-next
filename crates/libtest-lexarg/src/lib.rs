@@ -2,6 +2,12 @@
 //!
 //! This does not drive parsing but provides [`TestOptsParseState`] to plug into the parsing,
 //! allowing additional parsers to be integrated.
+//!
+//! ## Example
+//!
+//! ```no_run
+#![doc = include_str!("../examples/libtest-cli.rs")]
+//! ```
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![forbid(unsafe_code)]
